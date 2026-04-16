@@ -1,0 +1,205 @@
+---
+title: "Security & Signature Verification"
+description: "Verify that webhook deliveries are genuinely from DeepSmith"
+---
+
+Every webhook delivery is signed using your webhook's unique signing secret. You should always verify the signature before processing a delivery to ensure it hasn't been tampered with and genuinely came from DeepSmith.
+
+## How signing works
+
+1. DeepSmith constructs the full JSON payload (envelope + data)
+2. The JSON string is signed using **HMAC-SHA256** with your webhook's `signing_secret` as the key
+3. The signature is sent in the `X-Webhook-Signature` header, prefixed with `sha256=`
+
+```
+X-Webhook-Signature: sha256=5d41402abc4b2a76b9719d911017c592...
+```
+
+## Verification steps
+
+<Steps>
+  <Step title="Extract the signature header">
+    Read the `X-Webhook-Signature` header from the incoming request.
+  </Step>
+  <Step title="Compute the expected signature">
+    Calculate `sha256=` + HMAC-SHA256 of the **raw request body** using your signing secret.
+  </Step>
+  <Step title="Compare using constant-time comparison">
+    Use a timing-safe comparison function to prevent timing attacks.
+  </Step>
+</Steps>
+
+## Code examples
+
+<Tabs>
+  <Tab title="Node.js">
+```javascript
+const crypto = require("crypto");
+
+function verifyWebhookSignature(rawBody, signatureHeader, secret) {
+  const expected =
+    "sha256=" +
+    crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signatureHeader),
+    Buffer.from(expected)
+  );
+}
+
+// Express middleware
+app.post("/webhooks/deepsmith", express.raw({ type: "application/json" }), (req, res) => {
+  const signature = req.headers["x-webhook-signature"];
+
+  if (!verifyWebhookSignature(req.body, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  const event = JSON.parse(req.body);
+  // Process the event...
+  res.status(200).json({ received: true });
+});
+```
+  </Tab>
+  <Tab title="Python">
+```python
+import hmac
+import hashlib
+
+def verify_webhook_signature(raw_body: bytes, signature_header: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode("utf-8"),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature_header, expected)
+
+# Flask example
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+
+@app.route("/webhooks/deepsmith", methods=["POST"])
+def handle_webhook():
+    signature = request.headers.get("X-Webhook-Signature")
+    if not verify_webhook_signature(request.data, signature, WEBHOOK_SECRET):
+        abort(401)
+
+    event = request.get_json()
+    # Process the event...
+    return {"received": True}, 200
+```
+  </Tab>
+  <Tab title="PHP">
+```php
+function verifyWebhookSignature(string $rawBody, string $signatureHeader, string $secret): bool
+{
+    $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $secret);
+
+    return hash_equals($expected, $signatureHeader);
+}
+
+// Laravel example
+Route::post('/webhooks/deepsmith', function (Request $request) {
+    $signature = $request->header('X-Webhook-Signature');
+    $rawBody = $request->getContent();
+
+    if (!verifyWebhookSignature($rawBody, $signature, config('services.deepsmith.webhook_secret'))) {
+        abort(401, 'Invalid signature');
+    }
+
+    $event = json_decode($rawBody, true);
+    // Process the event...
+    return response()->json(['received' => true]);
+});
+```
+  </Tab>
+  <Tab title="Go">
+```go
+package main
+
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+func verifySignature(body []byte, signatureHeader, secret string) bool {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(body)
+    expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+    return hmac.Equal([]byte(signatureHeader), []byte(expected))
+}
+
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+    body, _ := io.ReadAll(r.Body)
+    signature := r.Header.Get("X-Webhook-Signature")
+
+    if !verifySignature(body, signature, webhookSecret) {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+
+    // Process the event...
+    fmt.Fprintf(w, `{"received": true}`)
+}
+```
+  </Tab>
+</Tabs>
+
+## HTTP headers
+
+Every webhook delivery includes these headers:
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `Content-Type` | Always `application/json` | `application/json` |
+| `X-Webhook-Signature` | HMAC-SHA256 signature of the request body | `sha256=5d41402abc...` |
+| `X-Webhook-Event` | The event type | `content.status_updated` |
+| `X-Webhook-Delivery` | Unique delivery ID (UUID) for idempotency | `9f2a3b4c-5d6e-...` |
+
+## Idempotency
+
+The `X-Webhook-Delivery` header contains a unique UUID for each delivery attempt. Use this to deduplicate events if your endpoint receives the same delivery more than once (e.g., due to retries where your server processed the event but failed to return a `2xx` response).
+
+```javascript
+// Example: track processed delivery IDs
+const processedDeliveries = new Set();
+
+app.post("/webhooks/deepsmith", (req, res) => {
+  const deliveryId = req.headers["x-webhook-delivery"];
+
+  if (processedDeliveries.has(deliveryId)) {
+    return res.status(200).json({ received: true, duplicate: true });
+  }
+
+  processedDeliveries.add(deliveryId);
+  // Process the event...
+  res.status(200).json({ received: true });
+});
+```
+
+<Warning>
+  In production, use a persistent store (Redis, database) for deduplication instead of an in-memory set.
+</Warning>
+
+## Security best practices
+
+<CardGroup cols={2}>
+  <Card title="Always verify signatures" icon="shield-check">
+    Never process a webhook without verifying the signature first.
+  </Card>
+  <Card title="Use HTTPS" icon="lock">
+    Always use HTTPS endpoints. DeepSmith will deliver to HTTP URLs, but HTTPS prevents payload interception.
+  </Card>
+  <Card title="Use constant-time comparison" icon="clock">
+    Avoid `==` or `===` for signature comparison. Use `timingSafeEqual`, `hmac.compare_digest`, or `hash_equals`.
+  </Card>
+  <Card title="Store secrets securely" icon="vault">
+    Keep your signing secret in environment variables or a secrets manager, never in source code.
+  </Card>
+</CardGroup>

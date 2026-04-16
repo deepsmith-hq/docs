@@ -1,0 +1,369 @@
+---
+title: "Event Catalog"
+description: "Complete reference of all webhook event types and their payload schemas"
+---
+
+## Payload envelope
+
+Every webhook delivery wraps the event-specific data in a standard envelope:
+
+```json
+{
+  "event": "content.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-5d2b-71e7-90f4-4b8bd1cfe98b",
+  "is_test": false,
+  "data": {
+    // Event-specific payload — see below
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event` | `string` | The event type that triggered this delivery |
+| `timestamp` | `string` | ISO 8601 timestamp of when the event was sent |
+| `workspace_id` | `uuid` | The workspace where the event originated |
+| `is_test` | `boolean` | `true` if this was sent via the test endpoint |
+| `data` | `object` | Event-specific payload (see sections below) |
+
+---
+
+## Content events
+
+### `content.status_updated`
+
+Fires when an article's status changes (e.g., draft to published, processing to generated).
+
+```json
+{
+  "event": "content.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "9f2a3b4c-5d6e-7f8a-9b0c-1d2e3f4a5b6c",
+    "title": "10 Strategies for Content Marketing in 2026",
+    "buyer_stage": "awareness",
+    "metadata": {
+      "topic": "Content Marketing",
+      "keywords": ["content strategy", "marketing"],
+      "source": "TOPIC_CLUSTERS"
+    },
+    "status": "GENERATED",
+    "config": {
+      "autowrite": false,
+      "planned_for": null,
+      "planned_time": null
+    },
+    "written_on": "2026-04-16T10:25:00+00:00",
+    "published_on": null,
+    "research_batch_id": "8e1d2c3b-...",
+    "topic": "Content Marketing",
+    "keywords": ["content strategy", "marketing"],
+    "source": "TOPIC_CLUSTERS",
+    "body": "<p>Article HTML content...</p>",
+    "cover_image": "https://cdn.deepsmith.io/images/cover.jpg",
+    "slug": "content-marketing-strategies-2026",
+    "permalink": "/blog/content-marketing-strategies-2026",
+    "meta_title": "10 Content Marketing Strategies for 2026",
+    "meta_description": "Learn the top content marketing strategies...",
+    "post_url": "https://your-site.com/blog/content-marketing-strategies-2026",
+    "createdAt": "2026-04-15T08:00:00+00:00",
+    "updatedAt": "2026-04-16T10:30:00+00:00"
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | Content ID |
+| `title` | `string` | Article title |
+| `buyer_stage` | `string\|null` | Funnel stage (awareness, consideration, decision) |
+| `metadata` | `object` | Topic, keywords, and source metadata |
+| `status` | `string` | Current status (e.g., `DRAFT`, `PROCESSING`, `GENERATED`, `PUBLISHED`, `FAILED`) |
+| `config` | `object` | Autowrite and scheduling configuration |
+| `written_on` | `datetime\|null` | When the content was generated |
+| `published_on` | `datetime\|null` | When the content was published |
+| `research_batch_id` | `uuid\|null` | Associated research batch |
+| `body` | `string\|null` | Full HTML content body |
+| `cover_image` | `string\|null` | Cover image URL |
+| `slug` | `string\|null` | URL slug |
+| `permalink` | `string\|null` | Relative permalink |
+| `meta_title` | `string\|null` | SEO title |
+| `meta_description` | `string\|null` | SEO description |
+| `post_url` | `string\|null` | Published URL on your site |
+</Accordion>
+
+---
+
+## Research events
+
+### `research_batch.status_updated`
+
+Fires when a research batch completes processing or fails.
+
+```json
+{
+  "event": "research_batch.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "8e1d2c3b-4a5f-6c7d-8e9f-0a1b2c3d4e5f",
+    "name": "Q2 Content Ideas",
+    "ideas_count": 15,
+    "status": "COMPLETED",
+    "topic_id": "7d0e1f2a-3b4c-5d6e-7f8a-9b0c1d2e3f4a",
+    "topic_name": "Content Marketing",
+    "buyer_stage": "awareness",
+    "persona_name": "Marketing Manager",
+    "source": "TOPIC_CLUSTERS",
+    "agent_log": [],
+    "research_log": null,
+    "ideas": [],
+    "createdAt": "2026-04-16T09:00:00+00:00",
+    "updatedAt": "2026-04-16T10:30:00+00:00"
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | Research batch ID |
+| `name` | `string` | Batch name |
+| `ideas_count` | `integer` | Number of ideas generated |
+| `status` | `string` | Batch status (e.g., `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`) |
+| `topic_id` | `uuid` | Associated topic cluster ID |
+| `topic_name` | `string` | Topic name |
+| `buyer_stage` | `string\|null` | Funnel stage |
+| `persona_name` | `string\|null` | Target persona |
+| `source` | `string` | Research source |
+| `ideas` | `array` | Generated content ideas |
+</Accordion>
+
+---
+
+## Agent events
+
+### `agent_task.status_updated`
+
+Fires when an AI agent task changes state (queued, running, succeeded, failed).
+
+```json
+{
+  "event": "agent_task.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "6c5d4e3f-2a1b-0c9d-8e7f-6a5b4c3d2e1f",
+    "agent_id": "5b4c3d2e-1f0a-9b8c-7d6e-5f4a3b2c1d0e",
+    "agent": {
+      "id": "5b4c3d2e-1f0a-9b8c-7d6e-5f4a3b2c1d0e",
+      "name": "Content Writer",
+      "icon": "pencil",
+      "short_description": "Writes long-form SEO content"
+    },
+    "name": "Write article: Content Marketing Strategies",
+    "status": "SUCCEEDED",
+    "inputs": {},
+    "outputs": null,
+    "usage": {
+      "input_tokens": 4250,
+      "output_tokens": 8100,
+      "total_tokens": 12350
+    },
+    "execution_duration": 45200,
+    "started_at": "2026-04-16T10:29:15+00:00",
+    "ended_at": "2026-04-16T10:30:00+00:00",
+    "created_at": "2026-04-16T10:29:10+00:00"
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | Agent task ID |
+| `agent_id` | `uuid` | Parent agent ID |
+| `agent` | `object` | Agent details (id, name, icon, short_description) |
+| `name` | `string` | Task name |
+| `status` | `string` | Task status (`QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`) |
+| `inputs` | `object` | Task input parameters |
+| `outputs` | `object\|null` | Task output data |
+| `usage` | `object` | Token usage (input_tokens, output_tokens, total_tokens) |
+| `execution_duration` | `integer\|null` | Execution time in milliseconds |
+| `started_at` | `datetime\|null` | When execution started |
+| `ended_at` | `datetime\|null` | When execution completed |
+</Accordion>
+
+---
+
+## Topic events
+
+### `topic.status_updated`
+
+Fires when a topic cluster's stage changes (e.g., processing to ready).
+
+```json
+{
+  "event": "topic.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "7d0e1f2a-3b4c-5d6e-7f8a-9b0c1d2e3f4a",
+    "name": "Content Marketing",
+    "stage": "READY",
+    "keywords": [
+      {"keyword": "content strategy", "msv": 5400, "kd": 45},
+      {"keyword": "content marketing", "msv": 12000, "kd": 62}
+    ],
+    "totalMsv": 17400,
+    "msvBadge": "MEDIUM",
+    "avgKd": 53,
+    "kdBadge": "MEDIUM",
+    "coverage": 75,
+    "createdAt": "2026-04-10T08:00:00+00:00",
+    "updatedAt": "2026-04-16T10:30:00+00:00"
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | Topic cluster ID |
+| `name` | `string` | Topic name |
+| `stage` | `string` | Current stage (e.g., `PROCESSING`, `READY`, `COMPLETED`) |
+| `keywords` | `array` | Associated keywords with search volume and difficulty |
+| `totalMsv` | `integer` | Total monthly search volume |
+| `msvBadge` | `string` | Search volume tier (`LOW`, `MEDIUM`, `HIGH`) |
+| `avgKd` | `integer` | Average keyword difficulty |
+| `kdBadge` | `string` | Difficulty tier (`LOW`, `MEDIUM`, `HIGH`) |
+| `coverage` | `integer` | Content coverage percentage |
+</Accordion>
+
+---
+
+## IQ events
+
+### `iq.status_updated`
+
+Fires when an IQ analysis (persona, product brief, voice profile) completes or changes stage.
+
+```json
+{
+  "event": "iq.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "4a3b2c1d-0e9f-8a7b-6c5d-4e3f2a1b0c9d",
+    "type": "persona",
+    "title": "Marketing Manager Persona",
+    "description": "B2B SaaS marketing manager, 5-10 years experience",
+    "content": "...",
+    "metadata": {},
+    "productId": null,
+    "productUrls": null,
+    "voiceSampleUrls": null,
+    "contentSampleUrls": null,
+    "isDefault": false,
+    "stage": "READY",
+    "imagesUrls": null,
+    "createdAt": "2026-04-15T14:00:00+00:00",
+    "updatedAt": "2026-04-16T10:30:00+00:00"
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | IQ record ID |
+| `type` | `string` | IQ type (e.g., `persona`, `product`, `voice`) |
+| `title` | `string` | IQ title |
+| `description` | `string\|null` | Description |
+| `content` | `string\|null` | Generated content |
+| `metadata` | `object` | Additional metadata |
+| `stage` | `string` | Current stage (e.g., `PROCESSING`, `READY`) |
+| `isDefault` | `boolean` | Whether this is the default for its type |
+</Accordion>
+
+---
+
+## Sitemap events
+
+### `sitemap_url.status_updated`
+
+Fires when sitemap URL processing completes or fails.
+
+```json
+{
+  "event": "sitemap_url.status_updated",
+  "timestamp": "2026-04-16T10:30:00+00:00",
+  "workspace_id": "019d917f-...",
+  "is_test": false,
+  "data": {
+    "id": "3f2e1d0c-9b8a-7f6e-5d4c-3b2a1f0e9d8c",
+    "url": "https://your-site.com/sitemap.xml",
+    "type": "sitemap",
+    "urlCount": 142,
+    "lastFetchedAt": "2026-04-16T10:30:00+00:00",
+    "createdAt": "2026-04-14T09:00:00+00:00",
+    "updatedAt": "2026-04-16T10:30:00+00:00",
+    "processing": {
+      "total": 142,
+      "ready": 138,
+      "failed": 4,
+      "completed": true
+    }
+  }
+}
+```
+
+<Accordion title="Field reference">
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `uuid` | Sitemap URL record ID |
+| `url` | `string` | Sitemap URL |
+| `type` | `string` | URL type (`sitemap`, `page`) |
+| `urlCount` | `integer` | Number of URLs in sitemap |
+| `lastFetchedAt` | `datetime` | Last fetch timestamp |
+| `processing` | `object` | Processing stats (total, ready, failed, completed) |
+</Accordion>
+
+---
+
+## Event catalog endpoint
+
+You can fetch the list of available events programmatically:
+
+```bash
+GET /api/workspace/{workspace_id}/webhooks/events
+```
+
+```json
+{
+  "code": 8010,
+  "messages": "Event catalog retrieved successfully",
+  "data": [
+    {
+      "event": "content.status_updated",
+      "label": "Content Status Updated",
+      "description": "Fires when an article's status changes (e.g., draft to published)",
+      "group": "content"
+    },
+    {
+      "event": "research_batch.status_updated",
+      "label": "Research Batch Status Updated",
+      "description": "Fires when a research batch completes or fails",
+      "group": "research_batch"
+    }
+  ]
+}
+```

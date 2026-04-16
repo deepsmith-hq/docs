@@ -1,0 +1,104 @@
+---
+title: "Webhooks Overview"
+description: "Receive real-time notifications when events happen in your workspace"
+---
+
+Webhooks allow your application to receive real-time HTTP callbacks when events occur in your DeepSmith workspace. Instead of polling the API for changes, webhooks push data to your server the moment something happens.
+
+## How it works
+
+<Steps>
+  <Step title="Register a webhook endpoint">
+    Provide a URL and choose which events you want to subscribe to.
+  </Step>
+  <Step title="DeepSmith sends events">
+    When a subscribed event fires, DeepSmith sends a signed `POST` request to your URL with the event payload.
+  </Step>
+  <Step title="Your server responds">
+    Return a `2xx` status code to acknowledge receipt. Failed deliveries are automatically retried.
+  </Step>
+</Steps>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Signed payloads" icon="shield-check">
+    Every delivery is signed with HMAC-SHA256 so you can verify it came from DeepSmith.
+  </Card>
+  <Card title="Automatic retries" icon="rotate">
+    Failed deliveries are retried up to 3 times with exponential backoff (10s, 60s, 5min).
+  </Card>
+  <Card title="Delivery logs" icon="list-check">
+    Full audit trail of every delivery attempt including response status, body, and timing.
+  </Card>
+  <Card title="Auto-disable" icon="circle-pause">
+    Webhooks are automatically disabled after 10 consecutive failures to protect your endpoint.
+  </Card>
+</CardGroup>
+
+## Supported events
+
+DeepSmith fires webhooks for six event types across your content pipeline:
+
+| Event | Description |
+|-------|-------------|
+| `content.status_updated` | An article's status changed (e.g., draft to published) |
+| `research_batch.status_updated` | A research batch completed or failed |
+| `agent_task.status_updated` | An AI agent task changed state |
+| `topic.status_updated` | A topic cluster's stage changed |
+| `iq.status_updated` | An IQ analysis completed or changed stage |
+| `sitemap_url.status_updated` | Sitemap URL processing completed or failed |
+
+<Info>
+  You can subscribe a single webhook to one or more events. Each webhook can listen to any combination of the six event types.
+</Info>
+
+## Quick example
+
+Here's a minimal Node.js server that receives webhook deliveries:
+
+```javascript
+const express = require("express");
+const crypto = require("crypto");
+
+const app = express();
+app.use(express.raw({ type: "application/json" }));
+
+app.post("/webhooks/deepsmith", (req, res) => {
+  const signature = req.headers["x-webhook-signature"];
+  const expected =
+    "sha256=" +
+    crypto
+      .createHmac("sha256", process.env.WEBHOOK_SECRET)
+      .update(req.body)
+      .digest("hex");
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+    return res.status(401).send("Invalid signature");
+  }
+
+  const event = JSON.parse(req.body);
+  console.log(`Received ${event.event}:`, event.data);
+
+  res.status(200).json({ received: true });
+});
+
+app.listen(3000);
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create a webhook" icon="plus" href="/webhooks/managing-webhooks">
+    Register your first webhook endpoint via the API.
+  </Card>
+  <Card title="Verify signatures" icon="key" href="/webhooks/security">
+    Learn how to validate webhook signatures in your server.
+  </Card>
+  <Card title="Event payloads" icon="code" href="/webhooks/event-catalog">
+    See the full payload schema for each event type.
+  </Card>
+  <Card title="Handle deliveries" icon="truck-fast" href="/webhooks/deliveries">
+    Understand retry logic, failure handling, and best practices.
+  </Card>
+</CardGroup>

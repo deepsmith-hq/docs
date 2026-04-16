@@ -1,0 +1,104 @@
+---
+title: "Troubleshooting"
+description: "Diagnose and fix common webhook issues"
+---
+
+## Common issues
+
+<AccordionGroup>
+  <Accordion title="Webhook was auto-disabled">
+    **Symptom**: Webhook status shows `DISABLED` and `consecutive_failures` is 10.
+
+    **Cause**: Your endpoint returned non-2xx responses or timed out for 10 consecutive deliveries.
+
+    **Fix**:
+    1. Check your endpoint is reachable and returning `200` for POST requests
+    2. Open the webhook in **Settings > Webhooks** and review the delivery log — filter by **Failed** to see what went wrong
+    3. Check the `http_status` and `response_body` on failed deliveries for clues
+    4. Fix the underlying issue on your server
+    5. Click **Enable** to reactivate the webhook (this resets the failure counter)
+    6. Send a test event to confirm everything is working
+  </Accordion>
+
+  <Accordion title="Signature verification failing">
+    **Symptom**: Your server rejects deliveries with a 401 error, but DeepSmith shows the delivery was sent.
+
+    **Common causes**:
+    - **Wrong secret**: Make sure you're using the signing secret from when the webhook was created, not the masked version (`********xxxx`)
+    - **Body parsing**: You must verify against the **raw request body** string, not a parsed/re-serialized JSON object. Middleware that parses JSON before your verification code will break the signature
+    - **Encoding issues**: Ensure you're comparing strings with the same encoding
+
+    **Debug tip**: Temporarily log both the received `X-Webhook-Signature` header and your computed signature to identify the mismatch.
+  </Accordion>
+
+  <Accordion title="Deliveries timing out">
+    **Symptom**: Deliveries show `http_status: null` and `response_time_ms: null` (connection error) or `response_time_ms: 15000` (timeout).
+
+    **Cause**: Your endpoint is taking longer than 15 seconds to respond.
+
+    **Fix**:
+    - Process webhooks asynchronously — acknowledge with `200` immediately, then queue the actual work
+    - Check your server's response time and optimize slow operations
+    - Ensure firewalls/security groups allow inbound traffic from DeepSmith
+  </Accordion>
+
+  <Accordion title="Receiving duplicate events">
+    **Symptom**: Your server processes the same event multiple times.
+
+    **Cause**: This can happen when your server processes the event but crashes or returns an error before sending the `200` response. DeepSmith retries the delivery.
+
+    **Fix**: Implement idempotency using the `X-Webhook-Delivery` header. Track processed delivery IDs in your database and skip duplicates. See the [idempotency section](/webhooks/security#idempotency) for code examples.
+  </Accordion>
+
+  <Accordion title="Missing events">
+    **Symptom**: Expected events are not arriving at your endpoint.
+
+    **Check**:
+    1. Is the webhook **Active**? Open it in **Settings > Webhooks** and check the status
+    2. Is the event type subscribed? Check the events list on the webhook
+    3. Are deliveries being created? Check the **Deliveries** tab — if entries exist but are failing, the issue is on your server
+    4. If no deliveries exist at all, the event may not have fired — verify the action occurred in your workspace
+  </Accordion>
+
+  <Accordion title="Lost signing secret">
+    **Symptom**: You can no longer verify webhook signatures because you lost the signing secret.
+
+    **Fix**: Delete the webhook and create a new one. The signing secret is only shown in full at creation time and cannot be retrieved afterward. Update your server with the new secret.
+  </Accordion>
+</AccordionGroup>
+
+## Testing your endpoint
+
+### Send a test event
+
+From **Settings > Webhooks**, open the webhook and click **Send Test Event**. Choose an event type to simulate.
+
+Test deliveries:
+- Have `is_test: true` in the payload
+- Are marked with a **Test** badge in the delivery log
+- Work even when the webhook is **disabled**
+- Use realistic sample payloads with zeroed UUIDs (`00000000-0000-0000-0000-000000000000`)
+
+### Local development
+
+For local development, use a tunneling service to expose your local server:
+
+```bash
+# Using ngrok
+ngrok http 3000
+```
+
+Then create a webhook in **Settings > Webhooks** with your ngrok URL (e.g., `https://abc123.ngrok.io/webhooks/deepsmith`). Send a test event to verify it reaches your local server.
+
+### Inspect deliveries
+
+Open the **Deliveries** tab on any webhook to review the full delivery history. Each delivery record shows:
+
+- The exact payload that was sent
+- The HTTP status your server returned
+- The response body (up to 2048 characters)
+- Response time in milliseconds
+- Which attempt number it was (1, 2, or 3)
+- Whether it was a test delivery
+
+Filter by **Failed** to quickly find problematic deliveries, or click **Retry** on any failed delivery to re-send it.
