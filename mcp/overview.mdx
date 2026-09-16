@@ -1,0 +1,153 @@
+---
+title: "MCP Server"
+description: "Let your AI assistant read and analyse your DeepSmith workspace"
+---
+
+The DeepSmith MCP server connects AI assistants — Claude, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex and any other MCP client — to your workspace. Your assistant can dig into your AI visibility, competitors, content map and content library, then answer questions or build reports from that data.
+
+It uses the same [API key](/api/overview#quick-start) as the API, with the default scopes.
+
+<Info>
+  Everything the MCP server does is free. It only reads your data; it never changes your workspace.
+</Info>
+
+## Connect your assistant
+
+The hosted server lives at `https://mcp.deepsmith.ai/mcp`. Every client below connects the same way: that URL, plus an `Authorization: Bearer ds_live_...` header carrying your API key. Nothing else to install.
+
+<Tabs>
+  <Tab title="Claude">
+Claude on the web, the desktop app and Cowork share one connector: add it once and it follows your account.
+
+1. **Settings → Connectors → Add custom connector**
+2. Name it `DeepSmith`, URL `https://mcp.deepsmith.ai/mcp`, then **Continue**
+3. Authentication: **No sign-in** (this server uses an API key, not OAuth)
+4. **Add header** → name `authorization`, value `Bearer ds_live_...`
+5. **Add**, then **Connect**. You should see 23 read-only tools.
+  </Tab>
+  <Tab title="Claude Code">
+```bash
+claude mcp add --transport http deepsmith https://mcp.deepsmith.ai/mcp \
+  --header "Authorization: Bearer ds_live_..."
+```
+  </Tab>
+  <Tab title="Cursor">
+**Settings → MCP → Add new server**, or edit `~/.cursor/mcp.json` (per project: `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "deepsmith": {
+      "url": "https://mcp.deepsmith.ai/mcp",
+      "headers": { "Authorization": "Bearer ds_live_..." }
+    }
+  }
+}
+```
+  </Tab>
+  <Tab title="VS Code">
+Put this in `.vscode/mcp.json`, or run **MCP: Open User Configuration** to apply it to every project. VS Code needs the `servers` key and `"type": "http"`; the older `.mcp.json` file silently drops headers.
+
+```json
+{
+  "servers": {
+    "deepsmith": {
+      "type": "http",
+      "url": "https://mcp.deepsmith.ai/mcp",
+      "headers": { "Authorization": "Bearer ds_live_..." }
+    }
+  }
+}
+```
+  </Tab>
+  <Tab title="Windsurf">
+Edit `~/.codeium/windsurf/mcp_config.json`. Windsurf calls the URL field `serverUrl`.
+
+```json
+{
+  "mcpServers": {
+    "deepsmith": {
+      "serverUrl": "https://mcp.deepsmith.ai/mcp",
+      "headers": { "Authorization": "Bearer ds_live_..." }
+    }
+  }
+}
+```
+  </Tab>
+  <Tab title="Gemini CLI">
+Edit `~/.gemini/settings.json` (per project: `.gemini/settings.json`). Gemini calls the URL field `httpUrl`.
+
+```json
+{
+  "mcpServers": {
+    "deepsmith": {
+      "httpUrl": "https://mcp.deepsmith.ai/mcp",
+      "headers": { "Authorization": "Bearer ds_live_..." }
+    }
+  }
+}
+```
+  </Tab>
+  <Tab title="Codex">
+Edit `~/.codex/config.toml`. Codex reads the key from the environment variable you name and sends it as a bearer token, so the key never sits in the file.
+
+```toml
+[mcp_servers.deepsmith]
+url = "https://mcp.deepsmith.ai/mcp"
+bearer_token_env_var = "DEEPSMITH_API_KEY"
+```
+
+```bash
+export DEEPSMITH_API_KEY=ds_live_...
+```
+  </Tab>
+  <Tab title="Other clients">
+Any client that speaks MCP over HTTP (Streamable HTTP) works with the URL and the `Authorization` header.
+
+A client that only runs local (stdio) servers can bridge to the hosted server with `mcp-remote`. The key goes through an env var because `mcp-remote` splits arguments on spaces:
+
+```json
+{
+  "mcpServers": {
+    "deepsmith": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.deepsmith.ai/mcp", "--header", "Authorization:${AUTH}"],
+      "env": { "AUTH": "Bearer ds_live_..." }
+    }
+  }
+}
+```
+  </Tab>
+</Tabs>
+
+<Tip>
+  **Settings > MCP server** in DeepSmith shows these snippets too. Create a key there and we fill it in for you.
+</Tip>
+
+## Try asking
+
+- "How visible is our brand in AI answers this month compared to last month?"
+- "Which competitors get cited more than us, and for which prompts?"
+- "Why isn't our site cited for our top prompts? Look at the answers."
+- "Which topics in our content map have gaps we haven't written about?"
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Using the MCP server" icon="lightbulb" href="/mcp/guide">
+    What to ask, the ready-made analyses, and the workflows that get the most out of your data.
+  </Card>
+  <Card title="Tool reference" icon="list" href="/mcp/tools">
+    Every tool, its inputs and what it returns.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| The server won't connect | Check the header is `Authorization: Bearer ds_live_...` and the key hasn't been revoked or expired. |
+| Some tools are missing | The key lacks that scope. Create a key with the scopes you need. |
+| Claude's connector dialog says "Sign in now · Detected" | Ignore it and pick **No sign-in**. The server takes an API key, not OAuth. |
+| VS Code ignores the header | You put it in `.mcp.json`. Use `.vscode/mcp.json` or the user configuration. |
+| ChatGPT connectors | Not supported yet: ChatGPT only accepts OAuth or open servers. |

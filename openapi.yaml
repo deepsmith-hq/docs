@@ -1,0 +1,1383 @@
+openapi: 3.1.0
+info:
+  title: DeepSmith API
+  version: "1.0"
+  description: |
+    Read your workspace's AI visibility, content map and content data. Every response is wrapped in
+    `{code, messages, data}`. Rates are fractions between 0 and 1 unless a field says otherwise.
+servers:
+  - url: https://services.deepsmith.ai/core/api/external/v1
+security:
+  - bearerAuth: []
+  - apiKeyHeader: []
+
+tags:
+  - name: Me
+  - name: Workspace
+  - name: AI visibility
+  - name: Content map
+  - name: Content
+  - name: IQ
+
+paths:
+  # ── Key ──────────────────────────────────────────────────────────────────
+  /me:
+    get:
+      tags: [Me]
+      summary: Get me
+      description: The API key, the user it acts as (the person who created it) and the workspace it belongs to. Works with any valid key.
+      responses:
+        "200":
+          description: Key details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          key:
+                            type: object
+                            properties:
+                              id: { type: string, format: uuid }
+                              name: { type: string }
+                              prefix: { type: string, example: ds_live_1a2b }
+                              scopes: { type: array, items: { $ref: "#/components/schemas/Scope" } }
+                              expires_at: { type: [string, "null"], format: date-time }
+                          user:
+                            type: object
+                            properties:
+                              id: { type: string, format: uuid }
+                              name: { type: string }
+                              email: { type: string }
+                              avatar: { type: [string, "null"] }
+                          workspace:
+                            type: object
+                            description: Full details at `GET /workspace`.
+                            properties:
+                              id: { type: string, format: uuid }
+                              name: { type: string }
+              example:
+                code: 4020
+                messages: Key details
+                data:
+                  key:
+                    id: 9f2a3b4c-1d2e-4f5a-8b6c-7d8e9f0a1b2c
+                    name: Reporting script
+                    prefix: ds_live_1a2b
+                    scopes: [visibility:read, contentmap:read, content:read, workspace:read]
+                    expires_at: null
+                  user:
+                    id: 3b4c5d6e-7f80-4a1b-9c2d-3e4f5a6b7c8d
+                    name: Jordan Lee
+                    email: jordan@acme.com
+                    avatar: null
+                  workspace:
+                    id: 7c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f
+                    name: Acme
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ── Workspace ──────────────────────────────────────────────────────────────
+  /workspace:
+    get:
+      tags: [Workspace]
+      summary: Get workspace
+      description: The workspace this key belongs to. Requires `workspace:read`.
+      responses:
+        "200":
+          description: Workspace details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          name: { type: string }
+                          website: { type: [string, "null"] }
+                          logo: { type: [string, "null"], description: Logo URL }
+                          icon: { type: [string, "null"], description: Icon URL }
+                          timezone: { type: [string, "null"] }
+                          owner:
+                            type: object
+                            properties:
+                              id: { type: string, format: uuid }
+                              name: { type: string }
+                              email: { type: string }
+                              avatar: { type: [string, "null"] }
+                          members: { type: integer, description: Number of workspace members }
+                          created_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /workspace/usage:
+    get:
+      tags: [Workspace]
+      summary: Get plan and usage
+      description: Plan, subscription state, credit balances, plan limits and AI visibility caps. Requires `workspace:read`.
+      responses:
+        "200":
+          description: Plan and usage
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          plan:
+                            type: [object, "null"]
+                            properties:
+                              code: { type: string, example: grow }
+                              name: { type: string, example: Grow }
+                              period: { type: [string, "null"] }
+                          subscription:
+                            type: object
+                            properties:
+                              past_due: { type: boolean }
+                              grace: { type: boolean }
+                              active: { type: boolean }
+                              canceled: { type: boolean }
+                              trial: { type: boolean }
+                              paused: { type: boolean }
+                          renews_at: { type: [string, "null"], format: date-time }
+                          credits:
+                            type: object
+                            description: Keyed by `ARTICLE`, `AGENT_TASK`, `IDEA_RESEARCH` and `INLINE_AI`.
+                            additionalProperties:
+                              type: object
+                              properties:
+                                limit: { type: [integer, "null"], description: "`null` means unlimited" }
+                                used: { type: integer }
+                                remaining: { type: [integer, "null"] }
+                                resets_at: { type: [string, "null"], format: date-time }
+                          limits:
+                            type: object
+                            description: Keyed by plan feature.
+                            additionalProperties:
+                              type: object
+                              properties:
+                                value: { type: [integer, string, "null"], description: "A number, `UNLIMITED` or `null`" }
+                                unlimited: { type: boolean }
+                          features:
+                            type: object
+                            description: Plan feature flags, keyed by feature.
+                            additionalProperties: true
+                          visibility:
+                            type: object
+                            properties:
+                              prompts_tracked: { type: integer }
+                              prompts_limit: {}
+                              platforms: { type: array, items: { $ref: "#/components/schemas/Platform" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ── AI visibility ────────────────────────────────────────────────────────
+  /visibility/setup:
+    get:
+      tags: [AI visibility]
+      summary: Get visibility setup
+      description: |
+        Brand settings, tracked competitors, prompt categories and the AI platforms your plan collects from.
+        Use it to look up competitor and category IDs. Requires `visibility:read`.
+      responses:
+        "200":
+          description: Workspace setup
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          brand:
+                            type: object
+                            properties:
+                              brand_name: { type: [string, "null"] }
+                              brand_domain: { type: [string, "null"] }
+                              brand_variants: { type: array, items: { type: string } }
+                              schedule:
+                                type: [object, "null"]
+                                description: Collection schedule. `days` are weekday numbers 0–6, `hour` is UTC.
+                                properties:
+                                  days: { type: array, items: { type: integer } }
+                                  hour: { type: integer }
+                              is_configured: { type: boolean }
+                              next_collection_at: { type: [string, "null"], format: date-time }
+                          competitors: { type: array, items: { $ref: "#/components/schemas/Competitor" } }
+                          categories:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: string, format: uuid }
+                                name: { type: string }
+                                color: { type: string }
+                                order: { type: integer }
+                                prompt_count: { type: integer }
+                                created_at: { type: string, format: date-time }
+                                updated_at: { type: string, format: date-time }
+                          platforms: { type: array, items: { $ref: "#/components/schemas/Platform" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/overview:
+    get:
+      tags: [AI visibility]
+      summary: Get visibility overview
+      description: |
+        Mention rate, citation rate and share of voice for the period, compared with the previous period, plus daily trends.
+        Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          mention_rate: { $ref: "#/components/schemas/RateBlock" }
+                          citation_rate: { $ref: "#/components/schemas/RateBlock" }
+                          share_of_voice:
+                            description: "`null` when the workspace tracks no competitors."
+                            oneOf:
+                              - $ref: "#/components/schemas/RateBlock"
+                              - type: "null"
+                          trend_series:
+                            type: object
+                            properties:
+                              mention: { $ref: "#/components/schemas/Trend" }
+                              citation: { $ref: "#/components/schemas/Trend" }
+              example:
+                code: 2460
+                data:
+                  range: 30d
+                  mention_rate: { current: 0.4231, previous: 0.3912, delta: 0.0319 }
+                  citation_rate: { current: 0.1204, previous: 0.135, delta: -0.0146 }
+                  share_of_voice: { current: 0.381, previous: 0.3502, delta: 0.0308 }
+                  trend_series:
+                    mention: [{ date: "2026-09-01", value: 0.4 }]
+                    citation: [{ date: "2026-09-01", value: 0.1 }]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/platforms:
+    get:
+      tags: [AI visibility]
+      summary: Get visibility by platform
+      description: One row per AI platform your plan collects from. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Platforms
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          platforms:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                platform: { $ref: "#/components/schemas/Platform" }
+                                snapshots: { type: integer }
+                                mention_rate: { type: number }
+                                citation_rate: { type: number }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/categories:
+    get:
+      tags: [AI visibility]
+      summary: Get visibility by category
+      description: |
+        One row per prompt category. A final `Uncategorized` row (with `id` and `color` set to `null`) appears
+        when uncategorized prompts have data. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          categories:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: [string, "null"], format: uuid }
+                                name: { type: string }
+                                color: { type: [string, "null"] }
+                                snapshots: { type: integer }
+                                mention_rate: { type: number }
+                                mention_delta: { type: number }
+                                citation_rate: { type: number }
+                                citation_delta: { type: number }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/competitors:
+    get:
+      tags: [AI visibility]
+      summary: Get competitor leaderboard
+      description: |
+        Your brand and every tracked competitor ranked by mention rate, citation rate and share of voice.
+        The first row is always your brand (`is_you: true`). Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          total_snapshots: { type: integer }
+                          your_position:
+                            type: [object, "null"]
+                            properties:
+                              mention: { $ref: "#/components/schemas/Position" }
+                              citation: { $ref: "#/components/schemas/Position" }
+                              sov: { $ref: "#/components/schemas/Position" }
+                          rows:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name: { type: string }
+                                is_you: { type: boolean }
+                                mention_rate: { type: number }
+                                mention_delta: { type: number }
+                                citation_rate: { type: number }
+                                citation_delta: { type: number }
+                                sov: { type: [number, "null"] }
+                                sov_delta: { type: number }
+              example:
+                code: 2462
+                data:
+                  range: 30d
+                  total_snapshots: 240
+                  your_position:
+                    mention: { rank: 1, value: 0.42, delta: 0.03 }
+                    citation: { rank: 2, value: 0.12, delta: -0.01 }
+                    sov: { rank: 1, value: 0.38, delta: 0.02 }
+                  rows:
+                    - { name: Acme, is_you: true, mention_rate: 0.42, mention_delta: 0.03, citation_rate: 0.12, citation_delta: -0.01, sov: 0.38, sov_delta: 0.02 }
+                    - { name: Rival, is_you: false, mention_rate: 0.3, mention_delta: 0, citation_rate: 0.15, citation_delta: 0, sov: 0.27, sov_delta: 0 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/competitors/{competitor}:
+    get:
+      tags: [AI visibility]
+      summary: Get competitor
+      description: One competitor's mention and citation rates, prompt coverage, citations by platform and top 5 cited pages. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/CompetitorId"
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Competitor overview
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          competitor: { $ref: "#/components/schemas/CompetitorBrief" }
+                          mention_rate: { $ref: "#/components/schemas/RateBlock" }
+                          citation_rate: { $ref: "#/components/schemas/RateBlock" }
+                          prompt_coverage:
+                            type: object
+                            description: Prompts where the competitor appears, out of `total` tracked prompts.
+                            properties:
+                              current: { type: integer }
+                              previous: { type: integer }
+                              total: { type: integer }
+                              delta: { type: integer }
+                          citation_rate_trend: { $ref: "#/components/schemas/Trend" }
+                          citations_by_platform:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                platform: { $ref: "#/components/schemas/Platform" }
+                                snapshots: { type: integer }
+                                citation_rate: { type: number }
+                          top_cited_pages:
+                            type: array
+                            maxItems: 5
+                            items:
+                              allOf:
+                                - $ref: "#/components/schemas/CitedPage"
+                                - properties:
+                                    competitor_name: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /visibility/competitors/{competitor}/pages:
+    get:
+      tags: [AI visibility]
+      summary: Get competitor pages
+      description: |
+        Every page of this competitor that AI answers cite. Pass `url` to get one page's detail instead:
+        its citation rate, share, trends and the prompts that cite it. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/CompetitorId"
+        - $ref: "#/components/parameters/Range"
+        - name: search
+          in: query
+          description: Case-insensitive match on the page URL. Ignored when `url` is set.
+          schema: { type: string, maxLength: 255 }
+        - name: url
+          in: query
+          description: Return this single page's detail instead of the list.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Cited pages, or one page's detail when `url` is set
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        oneOf:
+                          - title: Page list
+                            type: object
+                            properties:
+                              range: { $ref: "#/components/schemas/RangeValue" }
+                              competitor: { $ref: "#/components/schemas/CompetitorBrief" }
+                              pages:
+                                type: array
+                                items:
+                                  allOf:
+                                    - $ref: "#/components/schemas/CitedPage"
+                                    - properties:
+                                        folder: { type: string }
+                          - title: Page detail
+                            type: object
+                            properties:
+                              range: { $ref: "#/components/schemas/RangeValue" }
+                              competitor: { $ref: "#/components/schemas/CompetitorBrief" }
+                              page:
+                                type: object
+                                properties:
+                                  url: { type: string }
+                                  folder: { type: string }
+                              citation_rate: { $ref: "#/components/schemas/RateBlock" }
+                              citation_share: { $ref: "#/components/schemas/RateBlock" }
+                              unique_prompts: { $ref: "#/components/schemas/CountBlock" }
+                              citation_rate_trend: { $ref: "#/components/schemas/Trend" }
+                              citation_share_trend: { $ref: "#/components/schemas/Trend" }
+                              prompt_citations: { type: array, items: { $ref: "#/components/schemas/PagePrompt" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /visibility/cited-sources:
+    get:
+      tags: [AI visibility]
+      summary: Get cited sources
+      description: The domains or URLs that AI answers cite most, tagged when they're yours or a competitor's. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+        - name: type
+          in: query
+          required: true
+          schema: { type: string, enum: [domain, url] }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: Cited sources
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          type: { type: string, enum: [domain, url] }
+                          total_citations: { type: integer }
+                          sources:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                rank: { type: integer }
+                                value: { type: string, description: The domain or URL }
+                                citations: { type: integer }
+                                share: { type: number, description: Share of all citations in the period }
+                                tag: { type: [string, "null"], enum: [you, competitor, null] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /visibility/pages:
+    get:
+      tags: [AI visibility]
+      summary: Get your cited pages
+      description: |
+        Your pages that AI answers cite. Pass `url` to get one page's overview and the prompts that cite it instead.
+        URLs are normalized: lowercase, no scheme, `www.`, query string or trailing slash. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+        - name: url
+          in: query
+          description: Return this single page's overview and prompts instead of the list.
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 255 }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [citations, citation_rate, unique_prompts], default: citations }
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Pages, or one page's overview when `url` is set
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        oneOf:
+                          - title: Page list
+                            type: object
+                            properties:
+                              range: { $ref: "#/components/schemas/RangeValue" }
+                              totals:
+                                type: object
+                                properties:
+                                  pages: { type: integer }
+                              rows:
+                                type: array
+                                items:
+                                  allOf:
+                                    - $ref: "#/components/schemas/CitedPage"
+                                    - properties:
+                                        id: { type: string, description: Same as the normalized URL }
+                                        folder: { type: string }
+                              pagination: { $ref: "#/components/schemas/Pagination" }
+                          - title: Page detail
+                            type: object
+                            properties:
+                              overview:
+                                type: object
+                                properties:
+                                  range: { $ref: "#/components/schemas/RangeValue" }
+                                  page:
+                                    type: object
+                                    properties:
+                                      id: { type: string }
+                                      url: { type: string }
+                                      folder: { type: string }
+                                  citation_rate: { $ref: "#/components/schemas/RateBlock" }
+                                  citation_share: { $ref: "#/components/schemas/RateBlock" }
+                                  unique_prompts: { $ref: "#/components/schemas/CountBlock" }
+                                  trend_series:
+                                    type: object
+                                    properties:
+                                      citation_rate: { $ref: "#/components/schemas/Trend" }
+                                      citation_share: { $ref: "#/components/schemas/Trend" }
+                              prompts:
+                                type: object
+                                properties:
+                                  range: { $ref: "#/components/schemas/RangeValue" }
+                                  prompts: { type: array, items: { $ref: "#/components/schemas/PagePrompt" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /visibility/prompts:
+    get:
+      tags: [AI visibility]
+      summary: List prompts
+      description: Tracked prompts with their mention and citation rates for the period. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/Range"
+        - name: search
+          in: query
+          description: Case-insensitive match on prompt text.
+          schema: { type: string, maxLength: 255 }
+        - name: category_id
+          in: query
+          description: A category ID, or `__uncategorized__` for prompts without a category.
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, category, mention_rate, citation_rate], default: created_at }
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+      responses:
+        "200":
+          description: Prompts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          prompts: { type: array, items: { $ref: "#/components/schemas/Prompt" } }
+                          pagination:
+                            $ref: "#/components/schemas/Pagination"
+                            description: Missing when AI visibility tracking isn't set up yet.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /visibility/prompts/{prompt}:
+    get:
+      tags: [AI visibility]
+      summary: Get prompt analytics
+      description: One prompt's rates and trends, per-platform results and competitor mentions. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/PromptId"
+        - $ref: "#/components/parameters/Range"
+      responses:
+        "200":
+          description: Prompt analytics
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          overview:
+                            type: object
+                            properties:
+                              range: { $ref: "#/components/schemas/RangeValue" }
+                              prompt: { $ref: "#/components/schemas/Prompt" }
+                              mention_rate: { $ref: "#/components/schemas/RateBlock" }
+                              citation_rate: { $ref: "#/components/schemas/RateBlock" }
+                              trend_series:
+                                type: object
+                                properties:
+                                  mention:
+                                    type: array
+                                    items: { type: object, properties: { date: { type: string, format: date }, rate: { type: number } } }
+                                  citation:
+                                    type: array
+                                    items: { type: object, properties: { date: { type: string, format: date }, rate: { type: number } } }
+                          platforms:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                platform: { $ref: "#/components/schemas/Platform" }
+                                total: { type: integer }
+                                mentioned:
+                                  type: object
+                                  properties:
+                                    count: { type: integer }
+                                    rate: { type: [number, "null"] }
+                                cited:
+                                  type: object
+                                  properties:
+                                    count: { type: integer }
+                                    rate: { type: [number, "null"] }
+                          competitors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                competitor: { type: string, description: Competitor name }
+                                mentions: { type: integer }
+                                mention_rate: { type: [number, "null"] }
+                          total_snapshots: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /visibility/prompts/{prompt}/answers:
+    get:
+      tags: [AI visibility]
+      summary: Get prompt answers
+      description: |
+        The answers AI platforms gave for a prompt, newest first, up to 200. Compact by default; `full=1` adds the answer
+        text, citations, brand mention excerpts and detected competitors. Requires `visibility:read`.
+      parameters:
+        - $ref: "#/components/parameters/PromptId"
+        - $ref: "#/components/parameters/Range"
+        - name: platform
+          in: query
+          schema: { $ref: "#/components/schemas/Platform" }
+        - name: date
+          in: query
+          description: A single day, `YYYY-MM-DD`.
+          schema: { type: string, format: date }
+        - name: full
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Answers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          range: { $ref: "#/components/schemas/RangeValue" }
+                          prompt:
+                            type: object
+                            properties:
+                              id: { type: string, format: uuid }
+                              text: { type: string }
+                              status: { type: string }
+                          answers:
+                            type: array
+                            items:
+                              oneOf:
+                                - $ref: "#/components/schemas/AnswerSummary"
+                                - $ref: "#/components/schemas/AnswerDetail"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ── Content map ──────────────────────────────────────────────────────────
+  /content-map/topics:
+    get:
+      tags: [Content map]
+      summary: Get topic matrix
+      description: |
+        Each topic with your page count and each competitor's, split by buyer stage.
+        `is_untapped` means you have no pages but a competitor does; `is_coverage_gap` means you have fewer pages than
+        the top competitor. Requires `contentmap:read`.
+      responses:
+        "200":
+          description: Topic matrix
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          topics:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: string, format: uuid }
+                                name: { type: string }
+                                definition: { type: [string, "null"] }
+                                source: { type: string, enum: [INDUCED, EXTENDED] }
+                                you: { $ref: "#/components/schemas/StageCounts" }
+                                competitors:
+                                  type: array
+                                  items:
+                                    allOf:
+                                      - $ref: "#/components/schemas/StageCounts"
+                                      - properties:
+                                          entity_id: { type: string, format: uuid }
+                                          name: { type: string }
+                                is_untapped: { type: boolean }
+                                is_coverage_gap: { type: boolean }
+                          unclassified: { type: integer, description: Pages not assigned to a topic }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /content-map/sites:
+    get:
+      tags: [Content map]
+      summary: Get sites summary
+      description: Your site and each competitor site with page counts, topics covered and buyer stage mix. Requires `contentmap:read`.
+      responses:
+        "200":
+          description: Sites
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            entity_id: { type: string, format: uuid }
+                            name: { type: string }
+                            domain: { type: string }
+                            icon: { type: [string, "null"] }
+                            is_customer: { type: boolean, description: "`true` for your own site" }
+                            pages: { type: integer, description: Pages assigned to a topic }
+                            analysed: { type: integer }
+                            pending: { type: integer }
+                            topics_covered: { type: integer }
+                            stages: { $ref: "#/components/schemas/Stages" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /content-map/pages:
+    get:
+      tags: [Content map]
+      summary: List site pages
+      description: Analysed pages across your site and competitor sites, newest first. Requires `contentmap:read`.
+      parameters:
+        - name: entity_id
+          in: query
+          description: A site from `GET /content-map/sites`.
+          schema: { type: string, format: uuid }
+        - name: topic_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: buyer_stage
+          in: query
+          schema: { type: string, enum: [AWARENESS, CONSIDERATION, DECISION, NA] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [classified, unclassified] }
+        - name: search
+          in: query
+          description: Matches title, heading and URL.
+          schema: { type: string, maxLength: 255 }
+        - $ref: "#/components/parameters/Page"
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Pages
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          data:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: string, format: uuid }
+                                url: { type: string }
+                                title: { type: [string, "null"] }
+                                heading: { type: [string, "null"] }
+                                topic_id: { type: [string, "null"], format: uuid }
+                                topic: { type: [string, "null"] }
+                                topic_definition: { type: [string, "null"] }
+                                buyer_stage: { type: [string, "null"], enum: [AWARENESS, CONSIDERATION, DECISION, NA, null] }
+                                status: { type: string, enum: [classified, unclassified] }
+                                entity_id: { type: string, format: uuid }
+                                entity: { type: string, description: Site name }
+                                is_customer: { type: boolean }
+                                discovered_at: { type: [string, "null"], format: date-time }
+                          current_page: { type: integer }
+                          last_page: { type: integer }
+                          per_page: { type: integer }
+                          total: { type: integer }
+                          from: { type: [integer, "null"] }
+                          to: { type: [integer, "null"] }
+                          next_page_url: { type: [string, "null"] }
+                          prev_page_url: { type: [string, "null"] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  # ── Content ──────────────────────────────────────────────────────────────
+  /content:
+    get:
+      tags: [Content]
+      summary: List content
+      description: |
+        Content in one of three views, 15 per page. Requires `content:read`.
+
+        - `IDEAS`: new ideas, newest first. Filter with `sources[]`, `stages[]`, `from` and `to`.
+        - `PLANNED`: scheduled articles, soonest first.
+        - `PRODUCED`: generating, generated, published and failed articles, recently updated first. Filter with `status`.
+      parameters:
+        - name: mode
+          in: query
+          schema: { type: string, enum: [IDEAS, PLANNED, PRODUCED], default: IDEAS }
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 255 }
+        - name: status
+          in: query
+          description: "`PRODUCED` only."
+          schema: { type: string, enum: [GENERATING, GENERATED, PUBLISHED, FAILED] }
+        - name: sources[]
+          in: query
+          description: "`IDEAS` only. Opportunity agent slugs, or `manual`."
+          schema: { type: array, items: { type: string } }
+        - name: stages[]
+          in: query
+          description: "`IDEAS` only."
+          schema: { type: array, items: { $ref: "#/components/schemas/BuyerStage" } }
+        - name: from
+          in: query
+          description: "`IDEAS` only. Created on or after this date."
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: "`IDEAS` only. Created on or before this date."
+          schema: { type: string, format: date }
+        - $ref: "#/components/parameters/Page"
+      responses:
+        "200":
+          description: Content
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          contents: { type: array, items: { $ref: "#/components/schemas/Content" } }
+                          pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /content/{content}:
+    get:
+      tags: [Content]
+      summary: Get article
+      description: One content item, including its markdown body once written. Requires `content:read`.
+      parameters:
+        - name: content
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Content item
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/Content" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ── IQ ─────────────────────────────────────────────────────────────────
+  /iq:
+    get:
+      tags: [IQ]
+      summary: List IQ
+      description: Products, personas, brand voice, content types and visual guidelines (IQ). Requires `iq:read`.
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [PRODUCT, PERSONA, VOICE, CONTENT_TYPE, VISUAL_GUIDELINE] }
+        - name: search
+          in: query
+          description: Matches title and description.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Brand assets, newest first
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Iq" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /iq/{iq}:
+    get:
+      tags: [IQ]
+      summary: Get IQ
+      description: One brand asset with its full content. Requires `iq:read`.
+      parameters:
+        - name: iq
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Brand asset
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - properties:
+                      data: { $ref: "#/components/schemas/Iq" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Your API key: `Authorization: Bearer ds_live_...`"
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+
+  parameters:
+    Range:
+      name: range
+      in: query
+      description: The period to report on. The previous period of the same length is returned for comparison.
+      schema: { $ref: "#/components/schemas/RangeValue" }
+    Order:
+      name: order
+      in: query
+      schema: { type: string, enum: [asc, desc], default: desc }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    CompetitorId:
+      name: competitor
+      in: path
+      required: true
+      description: A competitor ID from `GET /visibility/setup`.
+      schema: { type: string, format: uuid }
+    PromptId:
+      name: prompt
+      in: path
+      required: true
+      description: A prompt ID from `GET /visibility/prompts`.
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing (`code` 4021), invalid, revoked or expired (`code` 4022) API key
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Envelope" }
+          example: { code: 4022, messages: "Invalid, revoked or expired API key.", data: null }
+    Forbidden:
+      description: The key lacks a required scope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Envelope"
+              - properties:
+                  data:
+                    type: object
+                    properties:
+                      required: { type: array, items: { $ref: "#/components/schemas/Scope" } }
+                      missing: { type: array, items: { $ref: "#/components/schemas/Scope" } }
+          example:
+            code: 4023
+            messages: This API key does not have the scope required for this request.
+            data: { required: [visibility:read], missing: [visibility:read] }
+    NotFound:
+      description: The resource doesn't exist in this workspace
+    ValidationError:
+      description: Invalid parameters
+
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        code: { type: integer, description: DeepSmith status code }
+        messages: { type: string }
+        data: {}
+
+    Scope:
+      type: string
+      enum: [workspace:read, visibility:read, contentmap:read, content:read, iq:read]
+
+    Platform:
+      type: string
+      enum: [chatgpt, google_ai_overview, perplexity, gemini, grok, claude]
+
+    RangeValue:
+      type: string
+      enum: [7d, 30d, 90d]
+      default: 30d
+
+    BuyerStage:
+      type: string
+      enum: [AWARENESS, CONSIDERATION, DECISION, BALANCED]
+
+    RateBlock:
+      type: object
+      description: A rate for this period and the previous one, as fractions. A side is `null` when there is no data.
+      properties:
+        current: { type: [number, "null"] }
+        previous: { type: [number, "null"] }
+        delta: { type: [number, "null"] }
+
+    CountBlock:
+      type: object
+      properties:
+        current: { type: integer }
+        previous: { type: integer }
+        delta: { type: integer }
+
+    Trend:
+      type: array
+      description: Daily values. Days without data are left out.
+      items:
+        type: object
+        properties:
+          date: { type: string, format: date }
+          value: { type: number }
+
+    Position:
+      type: object
+      properties:
+        rank: { type: integer }
+        value: { type: [number, "null"] }
+        delta: { type: number }
+
+    Pagination:
+      type: object
+      properties:
+        from: { type: [integer, "null"] }
+        to: { type: [integer, "null"] }
+        count: { type: integer }
+        per_page: { type: integer }
+        current_page: { type: integer }
+        total: { type: integer }
+        total_pages: { type: integer }
+        next_url: { type: [string, "null"] }
+        prev_url: { type: [string, "null"] }
+
+    Competitor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        domain: { type: string }
+        icon: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+
+    CompetitorBrief:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        domain: { type: string }
+
+    CitedPage:
+      type: object
+      properties:
+        url: { type: string, description: Normalized URL }
+        citations: { type: integer }
+        citations_delta: { type: integer }
+        citation_rate: { type: number }
+        citation_rate_delta: { type: number }
+        unique_prompts: { type: integer }
+        unique_prompts_delta: { type: integer }
+
+    PagePrompt:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        text: { type: string }
+        mention_rate: { $ref: "#/components/schemas/RateBlock" }
+        citation_rate: { $ref: "#/components/schemas/RateBlock" }
+        platforms: { type: array, items: { $ref: "#/components/schemas/Platform" } }
+        last_cited_date: { type: string, format: date }
+
+    Prompt:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        text: { type: string }
+        category_id: { type: [string, "null"], format: uuid }
+        category:
+          type: [object, "null"]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            color: { type: string }
+        mention_rate: { type: [number, "null"] }
+        mention_rate_delta: { type: [number, "null"] }
+        citation_rate: { type: [number, "null"] }
+        citation_rate_delta: { type: [number, "null"] }
+        last_collected_at: { type: [string, "null"] }
+        status: { type: string, enum: [PENDING, GENERATING, ACTIVE] }
+        created_at: { type: string, format: date-time }
+
+    AnswerSummary:
+      title: Compact
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        platform: { $ref: "#/components/schemas/Platform" }
+        status: { type: string, enum: [COLLECTED, FAILED] }
+        collected_at: { type: [string, "null"], format: date-time }
+        preview: { type: [string, "null"], description: The first 80 characters of the answer }
+        brand_mentioned: { type: [boolean, "null"] }
+        brand_cited: { type: [boolean, "null"] }
+        competitor_found: { type: boolean }
+        error_message: { type: [string, "null"] }
+
+    AnswerDetail:
+      title: Full (full=1)
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        prompt_id: { type: string, format: uuid }
+        platform: { $ref: "#/components/schemas/Platform" }
+        status: { type: string, enum: [COLLECTED, FAILED] }
+        collected_at: { type: [string, "null"], format: date-time }
+        response_text: { type: [string, "null"] }
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              domain: { type: [string, "null"] }
+              is_brand: { type: boolean }
+              is_competitor: { type: boolean }
+              competitor_name: { type: [string, "null"] }
+        brand_mentioned: { type: [boolean, "null"] }
+        brand_cited: { type: [boolean, "null"] }
+        brand_mention_excerpts: { type: array, items: { type: string } }
+        competitors_detected:
+          type: array
+          items:
+            type: object
+            properties:
+              competitor_name: { type: string }
+              mentioned: { type: boolean }
+              cited: { type: boolean }
+        error_message: { type: [string, "null"] }
+
+    Stages:
+      type: object
+      properties:
+        AWARENESS: { type: integer }
+        CONSIDERATION: { type: integer }
+        DECISION: { type: integer }
+        NA: { type: integer }
+
+    StageCounts:
+      type: object
+      properties:
+        total: { type: integer }
+        stages: { $ref: "#/components/schemas/Stages" }
+
+    Content:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [NEW, SCHEDULED, GENERATING, GENERATED, PUBLISHED, FAILED] }
+        buyer_stage: { oneOf: [{ $ref: "#/components/schemas/BuyerStage" }, { type: "null" }] }
+        source: { type: [string, "null"], description: "`MANUAL`, `PROMPT_LIBRARY` or an opportunity agent slug" }
+        keywords: { type: [array, "null"], items: { type: string } }
+        article_promise: { type: [string, "null"] }
+        scope_boundary: { type: [string, "null"] }
+        metadata: { type: [object, "null"], description: Idea details, including `run_id` for ideas from an opportunity run }
+        config:
+          type: object
+          properties:
+            autowrite: { type: [boolean, "null"] }
+            planned_for: { type: [string, "null"], format: date }
+            planned_time: { type: [string, "null"] }
+        written_on: { type: [string, "null"], format: date }
+        published_on: { type: [string, "null"], format: date-time }
+        body: { type: [string, "null"], description: The article in markdown, once written }
+        cover_image: { type: [string, "null"] }
+        slug: { type: [string, "null"] }
+        permalink: { type: [string, "null"] }
+        meta_title: { type: [string, "null"] }
+        meta_description: { type: [string, "null"] }
+        post_url: { type: [string, "null"], description: Where the article was published }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Iq:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [PRODUCT, PERSONA, VOICE, CONTENT_TYPE, VISUAL_GUIDELINE] }
+        title: { type: string }
+        description: { type: [string, "null"] }
+        content: { type: [object, "null"] }
+        metadata: { type: [object, "null"] }
+        productId: { type: [string, "null"], description: Personas only }
+        linkedProductName: { type: [string, "null"], description: Personas linked to a product only }
+        productUrls: { type: [array, "null"], description: Products only }
+        voiceSampleUrls: { type: [array, "null"], description: Voice only }
+        contentSampleUrls: { type: [array, "null"], description: Content types only }
+        imagesUrls: { type: [array, "null"], items: { type: string }, description: "Visual guidelines only: full URLs of the uploaded reference images" }
+        isDefault: { type: boolean }
+        stage: { type: [string, "null"], enum: [PENDING, READY, FAILED, null] }
+        createdAt: { type: [string, "null"], format: date-time }
+        updatedAt: { type: [string, "null"], format: date-time }

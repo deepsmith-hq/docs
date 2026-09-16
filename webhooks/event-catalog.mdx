@@ -46,9 +46,8 @@ Fires when an article's status changes (e.g., draft to published, processing to 
     "title": "10 Strategies for Content Marketing in 2026",
     "buyer_stage": "awareness",
     "metadata": {
-      "topic": "Content Marketing",
       "keywords": ["content strategy", "marketing"],
-      "source": "TOPIC_CLUSTERS"
+      "source": "MANUAL"
     },
     "status": "GENERATED",
     "config": {
@@ -58,10 +57,8 @@ Fires when an article's status changes (e.g., draft to published, processing to 
     },
     "written_on": "2026-04-16T10:25:00+00:00",
     "published_on": null,
-    "research_batch_id": "8e1d2c3b-...",
-    "topic": "Content Marketing",
     "keywords": ["content strategy", "marketing"],
-    "source": "TOPIC_CLUSTERS",
+    "source": "MANUAL",
     "body": "<p>Article HTML content...</p>",
     "cover_image": "https://cdn.deepsmith.io/images/cover.jpg",
     "slug": "content-marketing-strategies-2026",
@@ -81,12 +78,11 @@ Fires when an article's status changes (e.g., draft to published, processing to 
 | `id` | `uuid` | Content ID |
 | `title` | `string` | Article title |
 | `buyer_stage` | `string\|null` | Funnel stage (awareness, consideration, decision) |
-| `metadata` | `object` | Topic, keywords, and source metadata |
+| `metadata` | `object` | Keywords and source metadata |
 | `status` | `string` | Current status (e.g., `DRAFT`, `PROCESSING`, `GENERATED`, `PUBLISHED`, `FAILED`) |
 | `config` | `object` | Autowrite and scheduling configuration |
 | `written_on` | `datetime\|null` | When the content was generated |
 | `published_on` | `datetime\|null` | When the content was published |
-| `research_batch_id` | `uuid\|null` | Associated research batch |
 | `body` | `string\|null` | Full HTML content body |
 | `cover_image` | `string\|null` | Cover image URL |
 | `slug` | `string\|null` | URL slug |
@@ -98,33 +94,26 @@ Fires when an article's status changes (e.g., draft to published, processing to 
 
 ---
 
-## Research events
+## Opportunity events
 
-### `research_batch.status_updated`
+### `opportunity_run.status_updated`
 
-Fires when a research batch completes processing or fails.
+Fires when an opportunity agent run completes processing or fails.
 
 ```json
 {
-  "event": "research_batch.status_updated",
-  "timestamp": "2026-04-16T10:30:00+00:00",
+  "event": "opportunity_run.status_updated",
+  "timestamp": "2026-07-17T10:30:00+00:00",
   "workspace_id": "019d917f-...",
   "is_test": false,
   "data": {
     "id": "8e1d2c3b-4a5f-6c7d-8e9f-0a1b2c3d4e5f",
-    "name": "Q2 Content Ideas",
-    "ideas_count": 15,
+    "agent": "open-prompt",
     "status": "COMPLETED",
-    "topic_id": "7d0e1f2a-3b4c-5d6e-7f8a-9b0c1d2e3f4a",
-    "topic_name": "Content Marketing",
-    "buyer_stage": "awareness",
-    "persona_name": "Marketing Manager",
-    "source": "TOPIC_CLUSTERS",
-    "agent_log": [],
-    "research_log": null,
-    "ideas": [],
-    "createdAt": "2026-04-16T09:00:00+00:00",
-    "updatedAt": "2026-04-16T10:30:00+00:00"
+    "ideas_count": 15,
+    "error": null,
+    "ran_at": "2026-07-17T10:30:00+00:00",
+    "completed": true
   }
 }
 ```
@@ -132,16 +121,13 @@ Fires when a research batch completes processing or fails.
 <Accordion title="Field reference">
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | `uuid` | Research batch ID |
-| `name` | `string` | Batch name |
-| `ideas_count` | `integer` | Number of ideas generated |
-| `status` | `string` | Batch status (e.g., `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`) |
-| `topic_id` | `uuid` | Associated topic cluster ID |
-| `topic_name` | `string` | Topic name |
-| `buyer_stage` | `string\|null` | Funnel stage |
-| `persona_name` | `string\|null` | Target persona |
-| `source` | `string` | Research source |
-| `ideas` | `array` | Generated content ideas |
+| `id` | `uuid` | Opportunity run ID |
+| `agent` | `string` | Agent slug (e.g., `open-prompt`, `prompt-citeable`) |
+| `status` | `string` | Run status (`PENDING`, `RUNNING`, `COMPLETED`, `FAILED`) |
+| `ideas_count` | `integer` | Number of ideas the run generated |
+| `error` | `string\|null` | Failure reason when status is `FAILED` |
+| `ran_at` | `datetime\|null` | When the run finished |
+| `completed` | `boolean` | Whether the run reached a terminal state |
 </Accordion>
 
 ---
@@ -202,53 +188,6 @@ Fires when an AI agent task changes state (queued, running, succeeded, failed).
 
 ---
 
-## Topic events
-
-### `topic.status_updated`
-
-Fires when a topic cluster's stage changes (e.g., processing to ready).
-
-```json
-{
-  "event": "topic.status_updated",
-  "timestamp": "2026-04-16T10:30:00+00:00",
-  "workspace_id": "019d917f-...",
-  "is_test": false,
-  "data": {
-    "id": "7d0e1f2a-3b4c-5d6e-7f8a-9b0c1d2e3f4a",
-    "name": "Content Marketing",
-    "stage": "READY",
-    "keywords": [
-      {"keyword": "content strategy", "msv": 5400, "kd": 45},
-      {"keyword": "content marketing", "msv": 12000, "kd": 62}
-    ],
-    "totalMsv": 17400,
-    "msvBadge": "MEDIUM",
-    "avgKd": 53,
-    "kdBadge": "MEDIUM",
-    "coverage": 75,
-    "createdAt": "2026-04-10T08:00:00+00:00",
-    "updatedAt": "2026-04-16T10:30:00+00:00"
-  }
-}
-```
-
-<Accordion title="Field reference">
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `uuid` | Topic cluster ID |
-| `name` | `string` | Topic name |
-| `stage` | `string` | Current stage (e.g., `PROCESSING`, `READY`, `COMPLETED`) |
-| `keywords` | `array` | Associated keywords with search volume and difficulty |
-| `totalMsv` | `integer` | Total monthly search volume |
-| `msvBadge` | `string` | Search volume tier (`LOW`, `MEDIUM`, `HIGH`) |
-| `avgKd` | `integer` | Average keyword difficulty |
-| `kdBadge` | `string` | Difficulty tier (`LOW`, `MEDIUM`, `HIGH`) |
-| `coverage` | `integer` | Content coverage percentage |
-</Accordion>
-
----
-
 ## IQ events
 
 ### `iq.status_updated`
@@ -296,49 +235,6 @@ Fires when an IQ analysis (persona, product brief, voice profile) completes or c
 
 ---
 
-## Sitemap events
-
-### `sitemap_url.status_updated`
-
-Fires when sitemap URL processing completes or fails.
-
-```json
-{
-  "event": "sitemap_url.status_updated",
-  "timestamp": "2026-04-16T10:30:00+00:00",
-  "workspace_id": "019d917f-...",
-  "is_test": false,
-  "data": {
-    "id": "3f2e1d0c-9b8a-7f6e-5d4c-3b2a1f0e9d8c",
-    "url": "https://your-site.com/sitemap.xml",
-    "type": "sitemap",
-    "urlCount": 142,
-    "lastFetchedAt": "2026-04-16T10:30:00+00:00",
-    "createdAt": "2026-04-14T09:00:00+00:00",
-    "updatedAt": "2026-04-16T10:30:00+00:00",
-    "processing": {
-      "total": 142,
-      "ready": 138,
-      "failed": 4,
-      "completed": true
-    }
-  }
-}
-```
-
-<Accordion title="Field reference">
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `uuid` | Sitemap URL record ID |
-| `url` | `string` | Sitemap URL |
-| `type` | `string` | URL type (`sitemap`, `page`) |
-| `urlCount` | `integer` | Number of URLs in sitemap |
-| `lastFetchedAt` | `datetime` | Last fetch timestamp |
-| `processing` | `object` | Processing stats (total, ready, failed, completed) |
-</Accordion>
-
----
-
 ## Event catalog endpoint
 
 You can fetch the list of available events programmatically:
@@ -359,10 +255,16 @@ GET /api/workspace/{workspace_id}/webhooks/events
       "group": "content"
     },
     {
-      "event": "research_batch.status_updated",
-      "label": "Research Batch Status Updated",
-      "description": "Fires when a research batch completes or fails",
-      "group": "research_batch"
+      "event": "opportunity_run.status_updated",
+      "label": "Opportunity Run Status Updated",
+      "description": "Fires when an opportunity agent run completes or fails",
+      "group": "opportunity_run"
+    },
+    {
+      "event": "agent_task.status_updated",
+      "label": "Channel Content Status Updated",
+      "description": "Fires when an AI agent task changes state",
+      "group": "agent_task"
     }
   ]
 }

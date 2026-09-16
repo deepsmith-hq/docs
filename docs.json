@@ -22,6 +22,88 @@
         ]
       },
       {
+        "tab": "API",
+        "groups": [
+          {
+            "group": "API",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Me",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /me"
+            ]
+          },
+          {
+            "group": "Workspace",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /workspace",
+              "GET /workspace/usage"
+            ]
+          },
+          {
+            "group": "AI visibility",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /visibility/setup",
+              "GET /visibility/overview",
+              "GET /visibility/platforms",
+              "GET /visibility/categories",
+              "GET /visibility/competitors",
+              "GET /visibility/competitors/{competitor}",
+              "GET /visibility/competitors/{competitor}/pages",
+              "GET /visibility/cited-sources",
+              "GET /visibility/pages",
+              "GET /visibility/prompts",
+              "GET /visibility/prompts/{prompt}",
+              "GET /visibility/prompts/{prompt}/answers"
+            ]
+          },
+          {
+            "group": "Content map",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /content-map/topics",
+              "GET /content-map/sites",
+              "GET /content-map/pages"
+            ]
+          },
+          {
+            "group": "Content",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /content",
+              "GET /content/{content}"
+            ]
+          },
+          {
+            "group": "IQ",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /iq",
+              "GET /iq/{iq}"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "MCP",
+        "groups": [
+          {
+            "group": "MCP",
+            "pages": [
+              "mcp/overview",
+              "mcp/guide",
+              "mcp/tools"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Webhooks",
         "groups": [
           {

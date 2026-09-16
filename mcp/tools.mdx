@@ -1,0 +1,76 @@
+---
+title: "Tool Reference"
+description: "Every tool the DeepSmith MCP server exposes, what it takes and what it returns"
+---
+
+Tools map one-to-one to [API endpoints](/api/overview). Your assistant only sees the tools its key's scopes allow. All rates are fractions between 0 and 1; `range` is `7d`, `30d` or `90d` (default `30d`) and every rate comes with the previous window's value and the delta.
+
+## Me and workspace
+
+| Tool | Scope | Inputs | Returns |
+|---|---|---|---|
+| `whoami` | any | — | The workspace this key belongs to, the key's name, scopes and expiry. The assistant calls this first when unsure which workspace it's talking to. |
+| `get_workspace` | `workspace:read` | — | Workspace name, website, logo, timezone, owner and member count. |
+| `get_usage` | `workspace:read` | — | Plan, subscription state, credit balances per action type, plan limits, and prompts tracked against the cap. |
+
+## AI visibility
+
+Scope: `visibility:read`.
+
+| Tool | Inputs | Returns |
+|---|---|---|
+| `get_visibility_setup` | — | Brand name, domain and variants; tracked competitors and categories (with IDs); collection schedule; the AI platforms your plan collects from. |
+| `get_visibility_overview` | `range` | Workspace-wide mention rate, citation rate and share of voice with deltas, plus daily trends. Start here for "how are we doing". |
+| `get_visibility_by_platform` | `range` | Snapshots, mention and citation rate per platform (ChatGPT, Gemini, Perplexity, Claude, Grok, Google AI Overview). |
+| `get_visibility_by_category` | `range` | Mention and citation rates per prompt category, plus an uncategorised row. |
+| `get_competitor_leaderboard` | `range` | Every competitor with mention rate, citation rate and share of voice, and where you rank on each. Returns competitor IDs. |
+| `get_competitor` | `competitor_id`, `range` | One competitor in depth: rates, prompt coverage, trend, citations by platform, top cited pages. |
+| `get_competitor_pages` | `competitor_id`, `range`, `search?`, `url?` | Every page of theirs that AI cites, ordered by citations. With `url`, one page's citation rate, share, trends and the prompts citing it. |
+| `get_cited_sources` | `range`, `type` (`domain` \| `url`), `limit` (≤50) | The domains or URLs cited most across all your prompts, tagged as yours, a competitor's or neither. |
+| `list_cited_pages` | `range`, `search?`, `sort`, `order`, `page`, `per_page` (≤100) | Your own pages that AI cites: citations, citation rate, share and unique prompts. |
+| `get_cited_page` | `url`, `range` | One of your pages: rates, share, trends and the prompts that cite it. |
+| `list_prompts` | `range`, `search?`, `category_id?`, `sort`, `order`, `page`, `per_page` (≤100) | Tracked prompts with mention and citation rates. Returns prompt IDs. `sort` by `created_at`, `category`, `mention_rate` or `citation_rate`. |
+| `get_prompt_analytics` | `prompt_id`, `range` | One prompt: rates and trends, per-platform results, competitors mentioned. |
+| `get_prompt_answers` | `prompt_id`, `range`, `platform?`, `date?` (YYYY-MM-DD), `full` | The answers AI platforms gave, newest first, up to 200. With `full=true`, the answer text, citations, brand mention excerpts and detected competitors. |
+
+## Content map
+
+Scope: `contentmap:read`.
+
+| Tool | Inputs | Returns |
+|---|---|---|
+| `get_topic_matrix` | — | Every topic with your page count and each competitor's, split by buyer stage, flagged `is_coverage_gap` (you have fewer than the top competitor) and `is_untapped` (you have none). |
+| `get_sites_summary` | — | Your site and each competitor site: pages, analysed, pending, topics covered, buyer-stage mix. Returns entity IDs. |
+| `list_site_pages` | `entity_id?`, `topic_id?`, `buyer_stage?`, `status?`, `search?`, `per_page` (≤200) | Analysed pages across all sites, newest first. Combine `entity_id` and `topic_id` to see one competitor's pages on one topic. |
+
+## Content
+
+Scope: `content:read`.
+
+| Tool | Inputs | Returns |
+|---|---|---|
+| `list_content` | `mode` (`IDEAS` \| `PLANNED` \| `PRODUCED`), `search?`, `status?`, `sources?`, `stages?`, `from?`, `to?`, `page` | The content library, 15 per page. `IDEAS` filters by source and stage; `PRODUCED` filters by status. |
+| `get_article` | `content_id` | One item in full, including the markdown body, meta title and description, and where it was published. |
+
+Articles are also available as MCP **resources** at `deepsmith://articles/{id}`, so clients that support attaching resources can pull one into context directly.
+
+## Deep IQ
+
+Scope: `iq:read`.
+
+| Tool | Inputs | Returns |
+|---|---|---|
+| `get_brand_assets` | `type?` (`PRODUCT` \| `PERSONA` \| `VOICE` \| `CONTENT_TYPE` \| `VISUAL_GUIDELINE`), `search?` | Your IQ items with their generated content. Returns IQ IDs. |
+| `get_brand_asset` | `iq_id` | One IQ item in full: content and metadata. |
+
+## Prompts
+
+Ready-made analyses that chain the tools above. See [Using the MCP server](/mcp/guide#ready-made-prompts) for when to use each.
+
+| Prompt | Arguments | Needs |
+|---|---|---|
+| `weekly_visibility_briefing` | `range` (default `7d`) | `visibility:read` |
+| `competitor_gap_analysis` | `competitor_id`, `range` | `visibility:read`, `contentmap:read` |
+| `why_not_cited` | `prompt_id`, `range` | `visibility:read`, `contentmap:read` |
+| `content_gap_plan` | `buyer_stage?` | `contentmap:read`, `content:read` |
+| `answer_audit` | `range`, `platform?` | `visibility:read` |

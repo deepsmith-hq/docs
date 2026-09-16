@@ -1,0 +1,130 @@
+---
+title: "API Overview"
+description: "Read your workspace's AI visibility, content map and content data with an API key"
+---
+
+The DeepSmith API gives your scripts, dashboards and AI assistants read access to the data DeepSmith already collects for your workspace: AI visibility, competitors, cited sources, your content map and your content library.
+
+<Info>
+  Every read is free. Nothing in the API spends credits today.
+</Info>
+
+## Base URL
+
+```
+https://services.deepsmith.ai/core/api/external/v1
+```
+
+All paths in this documentation are relative to this base URL.
+
+## Quick start
+
+<Steps>
+  <Step title="Create an API key">
+    Go to **Settings > API keys** and click **Create key**. Give it a name, choose an expiry, and keep the scopes you need (all five by default).
+  </Step>
+  <Step title="Copy the key">
+    The key is shown **once**. Copy it and store it in an environment variable or secrets manager.
+  </Step>
+  <Step title="Make your first request">
+    Call `/me` to confirm the key works:
+
+    ```bash
+    curl -H "Authorization: Bearer ds_live_..." \
+      https://services.deepsmith.ai/core/api/external/v1/me
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  Only workspace owners can create and revoke keys. A key acts as the person who created it, and it stops working if that person leaves the workspace.
+</Warning>
+
+## Authentication
+
+Send your key with every request, in either header:
+
+```
+Authorization: Bearer ds_live_...
+X-API-KEY: ds_live_...
+```
+
+A key belongs to one workspace, so no workspace ID appears in any path. Keys start with `ds_live_`. DeepSmith stores only a hash, so a lost key can't be recovered. Revoke it and create a new one. Revoked keys stop working on the next request.
+
+## Scopes
+
+Each key carries scopes that decide which endpoints it can call. The API is read-only, so every scope is free.
+
+| Scope | Grants |
+|-------|--------|
+| `workspace:read` | `/workspace`: workspace details, plan and usage |
+| `visibility:read` | `/visibility`: setup, mention and citation rates, competitors, cited pages, answers and exports |
+| `contentmap:read` | `/content-map`: topics, sites and pages |
+| `content:read` | `/content`: articles and ideas |
+| `iq:read` | `/iq`: products, personas, brand voice, content types and visual guidelines |
+
+Each scope unlocks one path prefix. `GET /me` works with any key. New keys get all five scopes by default.
+
+<Tip>
+  Give each integration its own key with only the scopes it needs. You can revoke one without breaking the others.
+</Tip>
+
+## Response format
+
+Every response uses the same envelope:
+
+```json
+{
+  "code": 4020,
+  "messages": "Key details",
+  "data": { }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `code` | DeepSmith status code |
+| `messages` | Human-readable message |
+| `data` | The payload, or `null` on error |
+
+**All rates are fractions between 0 and 1.** A mention rate of `0.42` means 42%.
+
+## Errors
+
+The API uses standard HTTP status codes.
+
+| HTTP | `code` | Meaning |
+|------|--------|---------|
+| `401` | `4021` | Missing API key |
+| `401` | `4022` | Invalid, revoked or expired API key |
+| `403` | `4023` | The key lacks a scope this endpoint needs |
+| `404` | | The resource doesn't exist in this workspace |
+| `422` | | Invalid parameters |
+| `429` | | Rate limit exceeded |
+
+A `403` names the scopes you're missing:
+
+```json
+{
+  "code": 4023,
+  "messages": "This API key does not have the scope required for this request.",
+  "data": {
+    "required": ["visibility:read"],
+    "missing": ["visibility:read"]
+  }
+}
+```
+
+## Rate limits
+
+Limits apply per workspace, shared across all of its keys: **120 requests per minute**.
+
+When you hit a limit, the API returns `429`. Wait and retry with backoff.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Connect an AI assistant" icon="robot" href="/mcp/overview">
+    Use the DeepSmith MCP server with Claude, Cursor or VS Code.
+  </Card>
+</CardGroup>

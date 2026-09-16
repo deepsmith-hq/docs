@@ -38,19 +38,17 @@ Webhooks allow your application to receive real-time HTTP callbacks when events 
 
 ## Supported events
 
-DeepSmith fires webhooks for six event types across your content pipeline:
+DeepSmith fires webhooks for four event types across your content pipeline:
 
 | Event | Description |
 |-------|-------------|
 | `content.status_updated` | An article's status changed (e.g., draft to published) |
-| `research_batch.status_updated` | A research batch completed or failed |
+| `opportunity_run.status_updated` | An opportunity agent run completed or failed |
 | `agent_task.status_updated` | An AI agent task changed state |
-| `topic.status_updated` | A topic cluster's stage changed |
 | `iq.status_updated` | An IQ analysis completed or changed stage |
-| `sitemap_url.status_updated` | Sitemap URL processing completed or failed |
 
 <Info>
-  You can subscribe a single webhook to one or more events. Each webhook can listen to any combination of the six event types.
+  You can subscribe a single webhook to one or more events. Each webhook can listen to any combination of the available event types.
 </Info>
 
 ## Quick example
