@@ -381,6 +381,7 @@ paths:
                             items:
                               type: object
                               properties:
+                                competitor_id: { type: [string, "null"], format: uuid, description: "null on the is_you row" }
                                 name: { type: string }
                                 is_you: { type: boolean }
                                 mention_rate: { type: number }
@@ -910,7 +911,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          data:
+                          pages:
                             type: array
                             items:
                               type: object
@@ -928,14 +929,7 @@ paths:
                                 entity: { type: string, description: Site name }
                                 is_customer: { type: boolean }
                                 discovered_at: { type: [string, "null"], format: date-time }
-                          current_page: { type: integer }
-                          last_page: { type: integer }
-                          per_page: { type: integer }
-                          total: { type: integer }
-                          from: { type: [integer, "null"] }
-                          to: { type: [integer, "null"] }
-                          next_page_url: { type: [string, "null"] }
-                          prev_page_url: { type: [string, "null"] }
+                          pagination: { $ref: "#/components/schemas/Pagination" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "422": { $ref: "#/components/responses/ValidationError" }
@@ -991,7 +985,10 @@ paths:
                       data:
                         type: object
                         properties:
-                          contents: { type: array, items: { $ref: "#/components/schemas/Content" } }
+                          contents:
+                            type: array
+                            description: Content rows without `body`; GET /content/{content} carries it.
+                            items: { $ref: "#/components/schemas/Content" }
                           pagination: { $ref: "#/components/schemas/Pagination" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }

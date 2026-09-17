@@ -3,7 +3,7 @@ title: "MCP Server"
 description: "Let your AI assistant read and analyse your DeepSmith workspace"
 ---
 
-The DeepSmith MCP server connects AI assistants — Claude, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex and any other MCP client — to your workspace. Your assistant can dig into your AI visibility, competitors, content map and content library, then answer questions or build reports from that data.
+The DeepSmith MCP server connects AI assistants — Claude, Microsoft Copilot, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex and any other MCP client — to your workspace. Your assistant can dig into your AI visibility, competitors, content map and content library, then answer questions or build reports from that data.
 
 It uses the same [API key](/api/overview#quick-start) as the API, with the default scopes.
 
@@ -24,6 +24,14 @@ Claude on the web, the desktop app and Cowork share one connector: add it once a
 3. Authentication: **No sign-in** (this server uses an API key, not OAuth)
 4. **Add header** → name `authorization`, value `Bearer ds_live_...`
 5. **Add**, then **Connect**. You should see 23 read-only tools.
+  </Tab>
+  <Tab title="Copilot Studio">
+Microsoft Copilot Studio agents, including those published to Microsoft 365 Copilot. The agent maker adds the server; each user supplies their key when they connect.
+
+1. In the agent: **Tools → Add a tool → New tool → Model Context Protocol**
+2. Server name `DeepSmith`, a short description, Server URL `https://mcp.deepsmith.ai/mcp`
+3. Authentication **API key** → Type **Header** → name `Authorization`
+4. **Create**, then create a connection with `Bearer ds_live_...` as the key
   </Tab>
   <Tab title="Claude Code">
 ```bash
@@ -102,7 +110,12 @@ export DEEPSMITH_API_KEY=ds_live_...
 ```
   </Tab>
   <Tab title="Other clients">
-Any client that speaks MCP over HTTP (Streamable HTTP) works with the URL and the `Authorization` header.
+Any client that speaks MCP over HTTP (Streamable HTTP) works with the URL and the `Authorization` header. Known to work the same way:
+
+- **Zed** — Settings → MCP servers, remote server with a `headers` block
+- **Raycast** — AI → MCP servers, HTTP headers `Authorization: Bearer ds_live_...`
+- **JetBrains AI Assistant** (2025.3+) — Settings → Tools → AI Assistant → MCP, remote server, expand *HTTP headers*
+- **Perplexity** — Settings → Connectors → Custom connector, API key auth with header `Authorization` (remote connectors are on paid plans and still rolling out)
 
 A client that only runs local (stdio) servers can bridge to the hosted server with `mcp-remote`. The key goes through an env var because `mcp-remote` splits arguments on spaces:
 
@@ -123,6 +136,10 @@ A client that only runs local (stdio) servers can bridge to the hosted server wi
 <Tip>
   **Settings > MCP server** in DeepSmith shows these snippets too. Create a key there and we fill it in for you.
 </Tip>
+
+### Not yet: ChatGPT
+
+ChatGPT's custom connectors accept only two kinds of server: ones that need no authentication, and ones that run an OAuth sign-in flow. They don't take an API key or a custom header, so there is no way to hand ChatGPT your DeepSmith key today. When we add an OAuth sign-in to the MCP server, ChatGPT will connect through **Settings → Apps & Connectors** with Developer mode on. Note ChatGPT's own limits: Pro plans get read-only connectors; full MCP support is on Business, Enterprise and Edu.
 
 ## Try asking
 
@@ -150,4 +167,4 @@ A client that only runs local (stdio) servers can bridge to the hosted server wi
 | Some tools are missing | The key lacks that scope. Create a key with the scopes you need. |
 | Claude's connector dialog says "Sign in now · Detected" | Ignore it and pick **No sign-in**. The server takes an API key, not OAuth. |
 | VS Code ignores the header | You put it in `.mcp.json`. Use `.vscode/mcp.json` or the user configuration. |
-| ChatGPT connectors | Not supported yet: ChatGPT only accepts OAuth or open servers. |
+| ChatGPT connectors | Not supported yet: ChatGPT accepts only OAuth or open servers, never an API key. See [Not yet: ChatGPT](#not-yet-chatgpt). |

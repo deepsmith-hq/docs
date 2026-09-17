@@ -33,7 +33,7 @@ Three things shape most answers:
 
 **Name the window.** "This month vs last month" and "the last 7 days" give different answers. If you don't say, it's 30 days.
 
-**Name the thing.** "Rival's cited pages", "the prompt about pricing", "our BOFU topics". Vague questions get vague tool calls.
+**Name the thing.** "Rival's cited pages", "the prompt about pricing", "our decision-stage topics". Vague questions get vague tool calls.
 
 **Ask for evidence.** "Quote the answers" or "which pages did it cite" makes the assistant open `get_prompt_answers` or `get_competitor_pages` rather than summarising from rates alone.
 
@@ -112,7 +112,8 @@ A prompt only appears if your key has every scope it needs.
 - **One key per assistant.** Create a separate key for Claude Code, Cursor and any script, so you can revoke one without touching the others, and so the activity log tells you which client made which call.
 - **Use the narrowest scopes that answer your questions.** A key with only `visibility:read` gives an assistant a cleaner, smaller toolset and keeps your content and IQ out of its reach.
 - **Let it page.** Prompt lists and content lists are paginated (up to 100 and 15 per page). "Show all prompts" on a large workspace means several calls; "the top 20 by citation rate" is one.
-- **Cap the answers.** `get_prompt_answers` returns up to 200 answers for one prompt. Ask for a platform or a day when you only need a slice.
+- **Cap the answers.** `get_prompt_answers` returns up to 200 answers for one prompt; with `full=true` that is roughly 2 KB each, so a full pull can reach 400 KB. Ask for a platform or a day when you only need a slice.
+- **Mind the big reads.** `get_brand_assets` with no filter returns every asset's full content (tens of KB); pass `type` or `search`, or list and then `get_brand_asset` one at a time.
 - **Prefer the prompts for repeatable work.** Free-form questions are best for exploring; the ready-made prompts are best for the same report every week.
 - **Check its evidence.** When a claim matters, ask "which answers say that?" The assistant can quote them.
 
