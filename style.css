@@ -1,0 +1,9 @@
+/* Client logos are single-colour black SVGs; flip them in dark mode. */
+.dark img[src*="/mcp-clients/"] {
+  filter: invert(1);
+}
+
+/* The MCP client tabs overflow; keep the scroll but make the bar unobtrusive. */
+[role="tablist"] {
+  scrollbar-width: thin;
+}

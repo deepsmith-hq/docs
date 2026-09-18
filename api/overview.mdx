@@ -3,10 +3,10 @@ title: "API Overview"
 description: "Read your workspace's AI visibility, content map and content data with an API key"
 ---
 
-The DeepSmith API gives your scripts, dashboards and AI assistants read access to the data DeepSmith already collects for your workspace: AI visibility, competitors, cited sources, your content map and your content library.
+The DeepSmith API lets your scripts, dashboards and AI assistants read the data DeepSmith already collects for your workspace. That includes your AI visibility, your competitors, the sources AI answers cite, your content map and your content library.
 
 <Info>
-  Every read is free. Nothing in the API spends credits today.
+  Every read is free, and nothing in the API spends credits today.
 </Info>
 
 ## Base URL
@@ -15,45 +15,45 @@ The DeepSmith API gives your scripts, dashboards and AI assistants read access t
 https://services.deepsmith.ai/core/api/external/v1
 ```
 
-All paths in this documentation are relative to this base URL.
+All the paths in these docs are relative to this base URL, so `/me` means the base URL with `/me` on the end.
 
 ## Quick start
 
 <Steps>
   <Step title="Create an API key">
-    Go to **Settings > API keys** and click **Create key**. Give it a name, choose an expiry, and keep the scopes you need (all five by default).
+    Go to **Settings → API keys** and click **Create key**. Give it a name and pick an expiry. New keys get all five scopes by default, and you can remove the ones you don't need.
   </Step>
   <Step title="Copy the key">
-    The key is shown **once**. Copy it and store it in an environment variable or secrets manager.
+    We only show the key **once**, so copy it right away and keep it in an environment variable or a secrets manager.
   </Step>
   <Step title="Make your first request">
-    Call `/me` to confirm the key works:
+    You can call `/me` to check that the key works:
 
     ```bash
-    curl -H "Authorization: Bearer ds_live_..." \
+    curl -H "Authorization: Bearer YOUR_API_KEY" \
       https://services.deepsmith.ai/core/api/external/v1/me
     ```
   </Step>
 </Steps>
 
 <Warning>
-  Only workspace owners can create and revoke keys. A key acts as the person who created it, and it stops working if that person leaves the workspace.
+  Only workspace owners can create and revoke keys. A key acts as the person who created it, so if that person leaves the workspace, the key stops working.
 </Warning>
 
 ## Authentication
 
-Send your key with every request, in either header:
+Send your key with every request in either of these headers:
 
 ```
-Authorization: Bearer ds_live_...
-X-API-KEY: ds_live_...
+Authorization: Bearer YOUR_API_KEY
+X-API-KEY: YOUR_API_KEY
 ```
 
-A key belongs to one workspace, so no workspace ID appears in any path. Keys start with `ds_live_`. DeepSmith stores only a hash, so a lost key can't be recovered. Revoke it and create a new one. Revoked keys stop working on the next request.
+Each key belongs to one workspace, which is why you won't see a workspace ID in any path. Every key starts with `ds_live_`, and in the examples on this page you'd put your whole key where it says `YOUR_API_KEY`. DeepSmith only stores a hash of the key, so if you lose one we can't get it back for you. In that case you can revoke it and create a new one. A revoked key stops working on the very next request.
 
 ## Scopes
 
-Each key carries scopes that decide which endpoints it can call. The API is read-only, so every scope is free.
+Each key has scopes, and they decide which endpoints the key can call. The API only reads data, so every scope is free to use.
 
 | Scope | Grants |
 |-------|--------|
@@ -63,15 +63,15 @@ Each key carries scopes that decide which endpoints it can call. The API is read
 | `content:read` | `/content`: articles and ideas |
 | `iq:read` | `/iq`: products, personas, brand voice, content types and visual guidelines |
 
-Each scope unlocks one path prefix. `GET /me` works with any key. New keys get all five scopes by default.
+Each scope unlocks one path prefix. `GET /me` works with any key, whatever scopes it has.
 
 <Tip>
-  Give each integration its own key with only the scopes it needs. You can revoke one without breaking the others.
+  It helps to give each integration its own key with only the scopes it needs. That way you can revoke one key without breaking the others.
 </Tip>
 
 ## Response format
 
-Every response uses the same envelope:
+Every response comes back in the same wrapper:
 
 ```json
 {
@@ -87,22 +87,22 @@ Every response uses the same envelope:
 | `messages` | Human-readable message |
 | `data` | The payload, or `null` on error |
 
-**All rates are fractions between 0 and 1.** A mention rate of `0.42` means 42%.
+All rates are fractions between 0 and 1, so a mention rate of `0.42` means 42%.
 
 ## Errors
 
-The API uses standard HTTP status codes.
+The API uses the standard HTTP status codes.
 
-| HTTP | `code` | Meaning |
-|------|--------|---------|
-| `401` | `4021` | Missing API key |
-| `401` | `4022` | Invalid, revoked or expired API key |
-| `403` | `4023` | The key lacks a scope this endpoint needs |
-| `404` | | The resource doesn't exist in this workspace |
-| `422` | | Invalid parameters |
-| `429` | | Rate limit exceeded |
+| HTTP | `code` | Meaning | What to do |
+|------|--------|---------|------------|
+| `401` | `4021` | Missing API key | Add the `Authorization` or `X-API-KEY` header to the request. |
+| `401` | `4022` | Invalid, revoked or expired API key | Check that you copied the whole key. If it was revoked or has expired, create a new one. |
+| `403` | `4023` | The key lacks a scope this endpoint needs | Create a key that has the scope listed in `missing`. |
+| `404` | | The resource doesn't exist in this workspace | Check the ID. It has to come from the same workspace as the key. |
+| `422` | | Invalid parameters | Check the parameter names and values against the endpoint's reference page. |
+| `429` | | Rate limit exceeded | Wait a few seconds and try again. See [Rate limits](#rate-limits). |
 
-A `403` names the scopes you're missing:
+When you get a `403`, the response tells you which scopes the key is missing:
 
 ```json
 {
@@ -117,9 +117,7 @@ A `403` names the scopes you're missing:
 
 ## Rate limits
 
-Limits apply per workspace, shared across all of its keys: **120 requests per minute**.
-
-When you hit a limit, the API returns `429`. Wait and retry with backoff.
+You can make **120 requests per minute** per workspace, and that limit is shared across all of the workspace's keys. If you go over it, the API returns a `429`. When that happens, wait a few seconds before you try again, and wait a little longer each time if it keeps happening.
 
 ## Next steps
 

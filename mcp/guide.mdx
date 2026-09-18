@@ -3,43 +3,41 @@ title: "Using the MCP Server"
 description: "What to ask, how to ask it, and the workflows that get the most out of your DeepSmith data"
 ---
 
-Once your assistant is [connected](/mcp/overview), it can read everything DeepSmith has collected for your workspace and reason over it: which prompts you win and lose, who gets cited instead of you, what competitors publish that you don't, what you've already written, and how your brand is defined in Deep IQ.
-
-This page is about getting good answers out of it.
+Once your assistant is [connected](/mcp/overview), it can read everything DeepSmith has collected for your workspace and think it through with you. That covers which prompts you win and lose, who gets cited instead of you, what competitors publish that you don't, what you've already written, and how your brand is defined in Deep IQ. This page walks through how to ask so you get useful answers back.
 
 ## What it's good at
 
-- **Explaining a number.** "Why did our citation rate drop on Perplexity this week?" turns into a walk through the prompts and answers behind the drop.
-- **Comparing you to a competitor.** Rates, coverage, and the exact pages of theirs that AI answers cite.
-- **Finding gaps.** Topics competitors cover that you don't, at which buyer stage, and whether you already have an idea or article for them.
+- **Explaining a number.** If you ask "Why did our citation rate drop on Perplexity this week?", it will go through the prompts and answers behind the drop with you.
+- **Comparing you to a competitor.** It can show the rates and coverage side by side, along with the exact pages of theirs that AI answers cite.
+- **Finding gaps.** It can find topics competitors cover that you don't, tell you which buyer stage they sit in, and check whether you already have an idea or article for them.
 - **Reading the answers themselves.** The assistant can open the actual AI responses for a prompt and quote what they say about you.
-- **Grounding new content.** Before writing, it can pull your personas, voice and product context from Deep IQ and the pages that already earn citations.
+- **Grounding new content.** Before you write, it can pull your personas, voice and product context from Deep IQ, plus the pages that already earn citations.
 
-It can't change anything. Every tool is a read; nothing spends credits.
+It can't change anything in your workspace, because every tool only reads data and nothing spends credits.
 
-## How it works, briefly
+## How it works
 
-Your assistant sees a set of **tools** (one per kind of data) and a few **prompts** (ready-made analyses). When you ask a question, it chooses which tools to call, calls them with your key, and writes an answer from the results. You'll usually see the calls it makes; that's normal and useful, because you can check its evidence.
+Your assistant sees a set of **tools**, one for each kind of data, and a few **prompts**, which are ready-made analyses. When you ask a question, it picks which tools to call, calls them with your key, and writes an answer from what comes back. You'll usually see the calls it makes, and that's useful because you can check where the answer came from.
 
-Three things shape most answers:
+Most answers depend on these three things:
 
 | | What it means | Default |
 |---|---|---|
-| **Range** | The window to analyse. Every rate comes with the previous window of the same length for comparison. | 30 days (`7d`, `30d`, `90d`) |
-| **IDs** | Prompts, competitors, content and IQ items are addressed by ID. The assistant finds these itself from list tools; you can say "the competitor Rival" and let it look it up. | — |
-| **Rates** | Mention rate, citation rate and share of voice come back as fractions between 0 and 1. Ask for percentages and the assistant will convert. | — |
+| **Range** | The window to look at. Every rate comes with the previous window of the same length so you can compare. | 30 days (`7d`, `30d`, `90d`) |
+| **IDs** | Prompts, competitors, content and IQ items all have IDs. The assistant looks these up itself from the list tools, so you can just say "the competitor Rival". | |
+| **Rates** | Mention rate, citation rate and share of voice come back as fractions between 0 and 1. If you ask for percentages, the assistant will convert them. | |
 
 ## Asking well
 
-**Name the window.** "This month vs last month" and "the last 7 days" give different answers. If you don't say, it's 30 days.
+**Name the time window.** "This month vs last month" and "the last 7 days" will give you different answers, and if you don't say, it uses 30 days.
 
-**Name the thing.** "Rival's cited pages", "the prompt about pricing", "our decision-stage topics". Vague questions get vague tool calls.
+**Name the thing you mean.** Something like "Rival's cited pages", "the prompt about pricing" or "our decision-stage topics" works a lot better than a general question, because a vague question leads to vague tool calls.
 
-**Ask for evidence.** "Quote the answers" or "which pages did it cite" makes the assistant open `get_prompt_answers` or `get_competitor_pages` rather than summarising from rates alone.
+**Ask for evidence.** If you say "quote the answers" or "which pages did it cite", the assistant will open `get_prompt_answers` or `get_competitor_pages` and won't just summarise from the rates.
 
-**Ask for a shape.** "Give me a table", "top five", "one line per platform". The tools return a lot; the assistant is good at shaping it when told to.
+**Ask for a format.** You can ask for "a table", "the top five" or "one line per platform". The tools return a lot of data, and the assistant is good at trimming it down when you tell it how.
 
-**Chain it.** The best questions are two or three steps: *find the weakest prompt → read its answers → check whether we have a page on that topic.* You can ask for the chain in one go, or step through it.
+**Ask in steps.** The most useful questions usually have two or three steps, for example *find the weakest prompt, read its answers, then check whether we have a page on that topic.* You can ask for all of it at once or go one step at a time.
 
 ## Questions to try, by area
 
@@ -52,11 +50,11 @@ Three things shape most answers:
 **Competitors**
 - Who gets cited more than us, and by how much?
 - For Rival, which of their pages earn the most citations, and for which prompts?
-- Where does Rival beat us: which platforms, categories and prompts?
+- Where does Rival beat us, by platform, category and prompt?
 
 **Pages and sources**
 - Which of our pages earn citations, and which prompts cite them?
-- Which domains dominate the answers for our prompts? Are any of them ours?
+- Which domains show up most in the answers for our prompts? Are any of them ours?
 - Why isn't our pricing page cited? Look at the answers for the pricing prompt.
 
 **Content map**
@@ -75,55 +73,55 @@ Three things shape most answers:
 
 ## Ready-made prompts
 
-Prompts are complete analyses. They tell the assistant exactly which tools to combine and what to produce, so the output is consistent every time. Pick them from your client's prompt menu (in Claude Code, type `/` and look for `mcp__deepsmith__…`).
+Prompts are complete analyses. Each one tells the assistant which tools to combine and what to produce, so you get the same kind of output every time you run it. You can pick them from your client's prompt menu. In Claude Code, type `/` and look for `mcp__deepsmith__…`.
 
 | Prompt | Use it when | Takes |
 |---|---|---|
-| **Weekly visibility briefing** | Monday morning. What changed, on which platforms, who gained, and three prompts worth a look. | range (default 7d) |
+| **Weekly visibility briefing** | It's Monday morning and you want to see what changed, on which platforms, who gained, and three prompts worth a look. | range (default 7d) |
 | **Competitor gap analysis** | One competitor keeps winning and you want to know why and what to write. | competitor, range |
-| **Why is my brand not cited?** | A prompt that matters to you never cites you. Reads the answers and proposes a fix. | prompt, range |
-| **Content gap plan** | Planning next month. A ranked list of topics with evidence and what you already have. | buyer stage (optional) |
+| **Why is my brand not cited?** | A prompt that matters to you never cites you. It reads the answers and suggests a fix. | prompt, range |
+| **Content gap plan** | You're planning next month and want a ranked list of topics with evidence and what you already have. | buyer stage (optional) |
 | **Answer audit** | You want to know how AI describes your brand, including what it gets wrong. | range, platform (optional) |
 
-A prompt only appears if your key has every scope it needs.
+A prompt only shows up if your key has every scope that prompt needs.
 
 ## Workflows that work
 
 <Steps>
   <Step title="Monday review (5 minutes)">
-    Run **Weekly visibility briefing**. Then ask: "Of the three prompts you flagged, which one should I fix first, and why?"
+    Run **Weekly visibility briefing**, and then ask "Of the three prompts you flagged, which one should I fix first, and why?"
   </Step>
   <Step title="Competitor deep-dive (15 minutes)">
-    Ask "Who gained the most on us this month?" Take the top name and run **Competitor gap analysis** on it. Follow with: "Which of those recommendations do we already have an idea for?"
+    Ask "Who gained the most on us this month?" and run **Competitor gap analysis** on the top name. After that you can ask "Which of those recommendations do we already have an idea for?"
   </Step>
   <Step title="Planning content (20 minutes)">
-    Run **Content gap plan**, optionally for one buyer stage. For each topic you like, ask: "Show me the competitor pages that cover this and what they include." Then write briefs from that.
+    Run **Content gap plan**, for one buyer stage if you like. For each topic that looks good, ask "Show me the competitor pages that cover this and what they include," and write your briefs from there.
   </Step>
   <Step title="Before you write">
-    "Pull our brand voice, the persona this is for, and the three pages we already have on this topic that earn citations." That gives the writer (human or agent) the same context DeepSmith's own agents use.
+    Ask it to "Pull our brand voice, the persona this is for, and the three pages we already have on this topic that earn citations." That gives whoever is writing, a person or an agent, the same context DeepSmith's own agents use.
   </Step>
   <Step title="Auditing what AI says (monthly)">
-    Run **Answer audit**. Ask it to list factual errors first. Those are the wording changes with the most leverage.
+    Run **Answer audit** and ask it to list factual errors first, because fixing those is usually where a small wording change helps the most.
   </Step>
 </Steps>
 
 ## Getting the best results
 
-- **One key per assistant.** Create a separate key for Claude Code, Cursor and any script, so you can revoke one without touching the others, and so the activity log tells you which client made which call.
-- **Use the narrowest scopes that answer your questions.** A key with only `visibility:read` gives an assistant a cleaner, smaller toolset and keeps your content and IQ out of its reach.
-- **Let it page.** Prompt lists and content lists are paginated (up to 100 and 15 per page). "Show all prompts" on a large workspace means several calls; "the top 20 by citation rate" is one.
-- **Cap the answers.** `get_prompt_answers` returns up to 200 answers for one prompt; with `full=true` that is roughly 2 KB each, so a full pull can reach 400 KB. Ask for a platform or a day when you only need a slice.
-- **Mind the big reads.** `get_brand_assets` with no filter returns every asset's full content (tens of KB); pass `type` or `search`, or list and then `get_brand_asset` one at a time.
-- **Prefer the prompts for repeatable work.** Free-form questions are best for exploring; the ready-made prompts are best for the same report every week.
-- **Check its evidence.** When a claim matters, ask "which answers say that?" The assistant can quote them.
+- **Use one key per assistant.** Create a separate key for Claude Code, Cursor and each script. That way you can revoke one without touching the others, and the activity log shows which client made which call.
+- **Use the narrowest scopes that still answer your questions.** A key with only `visibility:read` gives the assistant a smaller, cleaner set of tools and keeps your content and IQ out of its reach.
+- **Let it page through results.** Prompt lists come in pages of up to 100, and content lists come in pages of 15. On a large workspace, "show all prompts" takes several calls, but "the top 20 by citation rate" only takes one.
+- **Keep answer pulls small.** `get_prompt_answers` returns up to 200 answers for one prompt. With `full=true` each one is about 2 KB, so a full pull can reach 400 KB. If you only need part of it, ask for one platform or one day.
+- **Watch out for the big reads.** `get_brand_assets` with no filter returns the full content of every asset, which can be tens of KB. It's better to pass `type` or `search`, or list them first and then open one at a time with `get_brand_asset`.
+- **Use the prompts for work you repeat.** Free-form questions are best when you're exploring, and the ready-made prompts are best when you want the same report every week.
+- **Check its evidence.** When a claim matters, ask "which answers say that?" and the assistant can quote them for you.
 
 ## Limits
 
-- **Read-only.** The assistant can't add prompts, write articles or change settings. Do that in the app.
-- **Rate limit:** 120 requests a minute per workspace, shared by all its keys. A chatty session stays well under this.
-- **No bulk export through MCP.** For a full dataset, use the [API](/api/overview) directly.
-- **ChatGPT connectors** aren't supported yet; they require an OAuth sign-in flow. Every other client on the [connect page](/mcp/overview#connect-your-assistant) works with the API key.
+- **Read-only.** The assistant can't add prompts, write articles or change settings, so you'll do those in the app.
+- **Rate limit.** Each workspace gets 120 requests a minute, shared by all its keys. A busy chat session stays well under that.
+- **No bulk export through MCP.** If you need a full dataset, use the [API](/api/overview) directly.
+- **ChatGPT connectors** aren't supported yet, because they need an OAuth sign-in flow. Every other client on the [connect page](/mcp/overview#connect-your-assistant) works with the API key.
 
-## What the assistant can see, and your control over it
+## What the assistant can see
 
-The assistant reads only the workspace the key belongs to, and only the areas its scopes allow. Everything it reads is logged: open **Settings → API keys**, pick the key, and the **Requests** tab lists every call with its status, timing and the data returned. Revoke a key at any time; anything using it stops on the next request.
+The assistant can only read the workspace the key belongs to, and only the areas its scopes allow. Everything it reads is logged. You can open **Settings → API keys**, pick the key, and look at the **Requests** tab to see every call with its status, timing and the data it returned. You can revoke a key at any time, and anything using it stops on the next request.

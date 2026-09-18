@@ -3,135 +3,135 @@ title: "MCP Server"
 description: "Let your AI assistant read and analyse your DeepSmith workspace"
 ---
 
-The DeepSmith MCP server connects AI assistants — Claude, Microsoft Copilot, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex and any other MCP client — to your workspace. Your assistant can dig into your AI visibility, competitors, content map and content library, then answer questions or build reports from that data.
+The DeepSmith MCP server connects your AI assistant to your workspace. It works with Claude, Microsoft Copilot, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex and any other MCP client. Once it's connected, your assistant can look through your AI visibility, competitors, content map and content library, and then answer your questions or build reports from that data.
 
 It uses the same [API key](/api/overview#quick-start) as the API, with the default scopes.
 
 <Info>
-  Everything the MCP server does is free. It only reads your data; it never changes your workspace.
+  Everything the MCP server does is free. It only reads your data and never changes anything in your workspace.
 </Info>
 
 ## Connect your assistant
 
-The hosted server lives at `https://mcp.deepsmith.ai/mcp`. Every client below connects the same way: that URL, plus an `Authorization: Bearer ds_live_...` header carrying your API key. Nothing else to install.
+The hosted server is at `https://mcp.deepsmith.ai/mcp/ws-uuid`. Every client below connects the same way, with that URL and an `Authorization: Bearer YOUR_API_KEY` header that carries your API key. You don't need to install anything else.
 
 <Info>
-  **Several workspaces?** Each one gets its own URL — `https://mcp.deepsmith.ai/mcp/<workspace-id>` — shown on **Settings → MCP server** in that workspace. Add one connector per workspace and name them as described in [Connecting multiple workspaces](#connecting-multiple-workspaces).
+  If you have more than one workspace, each one gets its own URL, `https://mcp.deepsmith.ai/mcp/ws-uuid/<workspace-id>`, which you'll find on **Settings → MCP server** in that workspace. Add one connector per workspace and name each one the way [Connecting multiple workspaces](#connecting-multiple-workspaces) describes.
 </Info>
 
-The snippets below use `deepsmith-acme` as the connector name. Replace `acme` with your own workspace slug.
+The snippets below use `deepsmith-acme` as the connector name, so swap `acme` for your own workspace slug.
 
 <Tabs>
-  <Tab title="Claude">
-Claude on the web, the desktop app and Cowork share one connector: add it once and it follows your account.
+  <Tab title="Claude" icon="/images/mcp-clients/claude.svg">
+Claude on the web, the desktop app and Cowork all share one connector, so you only add it once and it follows your account.
 
 1. **Settings → Connectors → Add custom connector**
-2. Name it `deepsmith-acme` (see [naming](#name-the-connector)), paste the URL from **Settings → MCP server**, then **Continue**
+2. Name it `deepsmith-acme` (see [naming](#name-the-connector)), paste `https://mcp.deepsmith.ai/mcp/ws-uuid`, then **Continue**
 3. Authentication: **No sign-in** (this server uses an API key, not OAuth)
-4. **Add header** → name `authorization`, value `Bearer ds_live_...`
+4. **Add header** → name `authorization`, value `Bearer YOUR_API_KEY`
 5. **Add**, then **Connect**. You should see 23 read-only tools.
   </Tab>
-  <Tab title="Copilot Studio">
-Microsoft Copilot Studio agents, including those published to Microsoft 365 Copilot. The agent maker adds the server; each user supplies their key when they connect.
+  <Tab title="Copilot Studio" icon="/images/mcp-clients/githubcopilot.svg">
+This works for Microsoft Copilot Studio agents, including ones published to Microsoft 365 Copilot. The person who makes the agent adds the server, and each user gives their own key when they connect.
 
 1. In the agent: **Tools → Add a tool → New tool → Model Context Protocol**
-2. Server name `deepsmith-acme` (see [naming](#name-the-connector)), a short description, Server URL `https://mcp.deepsmith.ai/mcp`
+2. Server name `deepsmith-acme` (see [naming](#name-the-connector)), a short description, Server URL `https://mcp.deepsmith.ai/mcp/ws-uuid`
 3. Authentication **API key** → Type **Header** → name `Authorization`
-4. **Create**, then create a connection with `Bearer ds_live_...` as the key
+4. **Create**, then create a connection with `Bearer YOUR_API_KEY` as the key
   </Tab>
-  <Tab title="Claude Code">
+  <Tab title="Claude Code" icon="/images/mcp-clients/claude.svg">
 ```bash
-claude mcp add --transport http deepsmith-acme https://mcp.deepsmith.ai/mcp \
-  --header "Authorization: Bearer ds_live_..."
+claude mcp add --transport http deepsmith-acme https://mcp.deepsmith.ai/mcp/ws-uuid \
+  --header "Authorization: Bearer YOUR_API_KEY"
 ```
   </Tab>
-  <Tab title="Cursor">
-**Settings → MCP → Add new server**, or edit `~/.cursor/mcp.json` (per project: `.cursor/mcp.json`):
+  <Tab title="Cursor" icon="/images/mcp-clients/cursor.svg">
+Go to **Settings → MCP → Add new server**, or edit `~/.cursor/mcp.json`. For a single project, use `.cursor/mcp.json` instead.
 
 ```json
 {
   "mcpServers": {
     "deepsmith-acme": {
-      "url": "https://mcp.deepsmith.ai/mcp",
-      "headers": { "Authorization": "Bearer ds_live_..." }
+      "url": "https://mcp.deepsmith.ai/mcp/ws-uuid",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     }
   }
 }
 ```
   </Tab>
-  <Tab title="VS Code">
-Put this in `.vscode/mcp.json`, or run **MCP: Open User Configuration** to apply it to every project. VS Code needs the `servers` key and `"type": "http"`; the older `.mcp.json` file silently drops headers.
+  <Tab title="VS Code" icon="/images/mcp-clients/visualstudiocode.svg">
+Put this in `.vscode/mcp.json`, or run **MCP: Open User Configuration** if you want it in every project. VS Code needs the `servers` key and `"type": "http"`. Don't use the older `.mcp.json` file, because it drops headers without telling you.
 
 ```json
 {
   "servers": {
     "deepsmith-acme": {
       "type": "http",
-      "url": "https://mcp.deepsmith.ai/mcp",
-      "headers": { "Authorization": "Bearer ds_live_..." }
+      "url": "https://mcp.deepsmith.ai/mcp/ws-uuid",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     }
   }
 }
 ```
   </Tab>
-  <Tab title="Windsurf">
-Edit `~/.codeium/windsurf/mcp_config.json`. Windsurf calls the URL field `serverUrl`.
+  <Tab title="Windsurf" icon="/images/mcp-clients/windsurf.svg">
+Edit `~/.codeium/windsurf/mcp_config.json`. Windsurf calls the URL field `serverUrl`, so use that name.
 
 ```json
 {
   "mcpServers": {
     "deepsmith-acme": {
-      "serverUrl": "https://mcp.deepsmith.ai/mcp",
-      "headers": { "Authorization": "Bearer ds_live_..." }
+      "serverUrl": "https://mcp.deepsmith.ai/mcp/ws-uuid",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     }
   }
 }
 ```
   </Tab>
-  <Tab title="Gemini CLI">
-Edit `~/.gemini/settings.json` (per project: `.gemini/settings.json`). Gemini calls the URL field `httpUrl`.
+  <Tab title="Gemini CLI" icon="/images/mcp-clients/googlegemini.svg">
+Edit `~/.gemini/settings.json`, or `.gemini/settings.json` for a single project. Gemini calls the URL field `httpUrl`, so use that name.
 
 ```json
 {
   "mcpServers": {
     "deepsmith-acme": {
-      "httpUrl": "https://mcp.deepsmith.ai/mcp",
-      "headers": { "Authorization": "Bearer ds_live_..." }
+      "httpUrl": "https://mcp.deepsmith.ai/mcp/ws-uuid",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
     }
   }
 }
 ```
   </Tab>
-  <Tab title="Codex">
-Edit `~/.codex/config.toml`. Codex reads the key from the environment variable you name and sends it as a bearer token, so the key never sits in the file.
+  <Tab title="Codex" icon="/images/mcp-clients/openai.svg">
+Edit `~/.codex/config.toml`. Codex reads the key from the environment variable you name and sends it as a bearer token, which means the key never has to sit in the file.
 
 ```toml
 [mcp_servers.deepsmith-acme]
-url = "https://mcp.deepsmith.ai/mcp"
+url = "https://mcp.deepsmith.ai/mcp/ws-uuid"
 bearer_token_env_var = "DEEPSMITH_API_KEY"
 ```
 
 ```bash
-export DEEPSMITH_API_KEY=ds_live_...
+export DEEPSMITH_API_KEY=YOUR_API_KEY
 ```
   </Tab>
-  <Tab title="Other clients">
-Any client that speaks MCP over HTTP (Streamable HTTP) works with the URL and the `Authorization` header. Known to work the same way:
+  <Tab title="Other clients" icon="plug">
+Any client that speaks MCP over HTTP (Streamable HTTP) will work with the URL and the `Authorization` header. These ones are known to work the same way:
 
-- **Zed** — Settings → MCP servers, remote server with a `headers` block
-- **Raycast** — AI → MCP servers, HTTP headers `Authorization: Bearer ds_live_...`
-- **JetBrains AI Assistant** (2025.3+) — Settings → Tools → AI Assistant → MCP, remote server, expand *HTTP headers*
-- **Perplexity** — Settings → Connectors → Custom connector, API key auth with header `Authorization` (remote connectors are on paid plans and still rolling out)
+- **Zed**: Settings → MCP servers, remote server with a `headers` block
+- **Raycast**: AI → MCP servers, HTTP headers `Authorization: Bearer YOUR_API_KEY`
+- **JetBrains AI Assistant** (2025.3+): Settings → Tools → AI Assistant → MCP, remote server, expand *HTTP headers*
+- **Perplexity**: Settings → Connectors → Custom connector, API key auth with header `Authorization` (remote connectors are on paid plans and still rolling out)
 
-A client that only runs local (stdio) servers can bridge to the hosted server with `mcp-remote`. The key goes through an env var because `mcp-remote` splits arguments on spaces:
+If your client only runs local (stdio) servers, you can bridge it to the hosted server with `mcp-remote`. The key goes in an env var because `mcp-remote` splits arguments on spaces and would break the header apart.
 
 ```json
 {
   "mcpServers": {
     "deepsmith-acme": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.deepsmith.ai/mcp", "--header", "Authorization:${AUTH}"],
-      "env": { "AUTH": "Bearer ds_live_..." }
+      "args": ["-y", "mcp-remote", "https://mcp.deepsmith.ai/mcp/ws-uuid", "--header", "Authorization:${AUTH}"],
+      "env": { "AUTH": "Bearer YOUR_API_KEY" }
     }
   }
 }
@@ -140,20 +140,12 @@ A client that only runs local (stdio) servers can bridge to the hosted server wi
 </Tabs>
 
 <Tip>
-  **Settings > MCP server** in DeepSmith shows these snippets too. Create a key there and we fill it in for you.
+  If you don't have a key yet, you can create one under **Settings → API keys** in DeepSmith. It's only shown once, so copy it and paste it into the snippet above.
 </Tip>
-
-### Not yet: ChatGPT
-
-ChatGPT's custom connectors accept only two kinds of server: ones that need no authentication, and ones that run an OAuth sign-in flow. They don't take an API key or a custom header, so there is no way to hand ChatGPT your DeepSmith key today. When we add an OAuth sign-in to the MCP server, ChatGPT will connect through **Settings → Apps & Connectors** with Developer mode on. Note ChatGPT's own limits: Pro plans get read-only connectors; full MCP support is on Business, Enterprise and Edu.
-
-## Connecting multiple workspaces
-
-One connector per workspace, one API key per connector. The key selects the workspace; the workspace id on the end of the URL only keeps the URLs distinct, because Claude and most clients refuse a second connector with a URL they already have. Mixing them up is refused rather than guessed: a URL and a key from two different workspaces gives a clear `403`.
 
 ### Name the connector
 
-Your assistant sees each tool as `mcp__<connector-name>__<tool>`, so the connector name is the only thing telling your workspaces apart. Name it:
+Your assistant sees each tool as `mcp__<connector-name>__<tool>`, so the connector name is the only way it can tell your workspaces apart. We suggest naming it like this:
 
 ```
 deepsmith-<workspace-slug>
@@ -164,7 +156,7 @@ deepsmith-<workspace-slug>
 | Lowercase letters, numbers and hyphens only | Some clients reject or rewrite spaces and special characters in tool names |
 | Always start with `deepsmith-` | Groups your DeepSmith workspaces together and separates them from other connectors |
 | Slug is the brand or client name | Stays correct when the plan changes |
-| Slug at most 20 characters | Some clients cap the full tool name at 64 characters; at 20 the longest DeepSmith tool name still fits |
+| Slug at most 20 characters | Some clients cap the full tool name at 64 characters, and at 20 the longest DeepSmith tool name still fits |
 | Never a plan name, environment or person | Those change, and the name becomes misleading |
 
 | Workspace | Connector name |
@@ -174,13 +166,13 @@ deepsmith-<workspace-slug>
 | Globex (agency client) | `deepsmith-globex` |
 
 <Warning>
-  `Other`, `Scale workspace`, `test` → all three become `deepsmith-acme`-style names. A vague name is how an assistant ends up answering from the wrong workspace.
+  Names like `Other`, `Scale workspace` and `test` are usually how an assistant ends up in the wrong workspace, so it's worth renaming each one to something like `deepsmith-acme` or `deepsmith-globex`.
 </Warning>
 
 
 ### Asking about one workspace
 
-Name the workspace in your request — "check usage in acme". Without it, an assistant with several connectors may query every one of them and label the results per workspace.
+It helps to name the workspace when you ask, like "check usage in acme". If you don't, an assistant with several connectors might query all of them and label the results by workspace.
 
 ## Try asking
 
@@ -205,8 +197,8 @@ Name the workspace in your request — "check usage in acme". Without it, an ass
 | Problem | Fix |
 |---------|-----|
 | My assistant queried the wrong workspace | Its connectors have vague or similar names. Rename each to `deepsmith-<workspace-slug>`, then restart the client or reconnect so it picks up the new tool names. |
-| The server won't connect | Check the header is `Authorization: Bearer ds_live_...` and the key hasn't been revoked or expired. |
+| The server won't connect | Check the header is `Authorization: Bearer YOUR_API_KEY` and the key hasn't been revoked or expired. |
 | Some tools are missing | The key lacks that scope. Create a key with the scopes you need. |
 | Claude's connector dialog says "Sign in now · Detected" | Ignore it and pick **No sign-in**. The server takes an API key, not OAuth. |
 | VS Code ignores the header | You put it in `.mcp.json`. Use `.vscode/mcp.json` or the user configuration. |
-| ChatGPT connectors | Not supported yet: ChatGPT accepts only OAuth or open servers, never an API key. See [Not yet: ChatGPT](#not-yet-chatgpt). |
+| ChatGPT connectors | Not supported yet, because ChatGPT only accepts OAuth or open servers and never an API key. See [Not yet: ChatGPT](#not-yet-chatgpt). |

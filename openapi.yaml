@@ -1076,7 +1076,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: "Your API key: `Authorization: Bearer ds_live_...`"
+      description: "Your API key: `Authorization: Bearer API Key Value`"
     apiKeyHeader:
       type: apiKey
       in: header
