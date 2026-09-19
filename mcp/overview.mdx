@@ -143,6 +143,10 @@ If your client only runs local (stdio) servers, you can bridge it to the hosted 
   If you don't have a key yet, you can create one under **Settings → API keys** in DeepSmith. It's only shown once, so copy it and paste it into the snippet above.
 </Tip>
 
+## Connecting multiple workspaces
+
+You add one connector per workspace, and each connector gets its own API key. The key decides which workspace you're in. The workspace id at the end of the URL is only there to keep the URLs distinct.
+
 ### Name the connector
 
 Your assistant sees each tool as `mcp__<connector-name>__<tool>`, so the connector name is the only way it can tell your workspaces apart. We suggest naming it like this:
