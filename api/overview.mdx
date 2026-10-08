@@ -97,6 +97,7 @@ The API uses the standard HTTP status codes.
 |------|--------|---------|------------|
 | `401` | `4021` | Missing API key | Add the `Authorization` or `X-API-KEY` header to the request. |
 | `401` | `4022` | Invalid, revoked or expired API key | Check that you copied the whole key. If it was revoked or has expired, create a new one. |
+| `402` | `1916` | The workspace has no active subscription, or a payment is past due | Renew the plan or fix the payment method in Settings → Billing. `/me` and `/workspace` keep working. |
 | `403` | `4023` | The key lacks a scope this endpoint needs | Create a key that has the scope listed in `missing`. |
 | `404` | | The resource doesn't exist in this workspace | Check the ID. It has to come from the same workspace as the key. |
 | `422` | | Invalid parameters | Check the parameter names and values against the endpoint's reference page. |
