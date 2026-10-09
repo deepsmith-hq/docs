@@ -142,5 +142,8 @@
       "copy",
       "view"
     ]
+  },
+  "background": {
+    "decoration": "grid"
   }
 }
